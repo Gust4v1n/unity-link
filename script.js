@@ -1,64 +1,19 @@
-// --- FUNÇÕES DE ESTATÍSTICAS ---
-async function atualizarEstatisticas() {
-    try {
-        console.log('Atualizando estatísticas...');
-        
-        // Usar endpoint específico para estatísticas se disponível
-        let stats;
-        try {
-            stats = await apiCall('getStats', 'GET');
-            console.log('Estatísticas obtidas via API:', stats);
-        } catch (error) {
-            console.log('Endpoint de estatísticas não disponível, calculando manualmente...');
-            // Fallback: buscar usuários e calcular manualmente
-            const usuarios = await apiCall('getUsers', 'GET');
-            stats = {
-                totalUsuarios: usuarios.length,
-                usuariosAtivos: usuarios.filter(user => !user.banned).length,
-                usuariosBanidos: usuarios.filter(user => user.banned).length,
-                versao: '1.0.0'
-            };
-        }
-        
-        // Atualizar elementos da interface
-        const elementos = {
-            totalUsers: stats.totalUsuarios,
-            activeUsers: stats.usuariosAtivos,
-            bannedUsers: stats.usuariosBanidos,
-            userCount: stats.totalUsuarios,
-            affectedCount: stats.usuariosAtivos,
-            currentVersion: `v${stats.versao}`
-        };
-        
-        Object.keys(elementos).forEach(id => {
-            const element = document.getElementById(id);
-            if (element) {
-                element.textContent = elementos[id];
-            }
-        });
-        
-        console.log('Estatísticas atualizadas:', stats);
-        
-    } catch (error) {
-        console.error('Erro ao atualizar estatísticas:', error);
-        showNotification('Erro ao carregar estatísticas: ' + error.message, 'error');
-    }
-}// script.js - Versão Integrada com Backend
+// script.js - Versão Corrigida e Otimizada
 
 // --- CONFIGURAÇÕES ---
 const API_BASE_URL = '/.netlify/functions';
 
 // --- FUNÇÕES DE AUTENTICAÇÃO E UI ---
 function checkAuthentication() {
-    const session = localStorage.getItem('admin_session');
-    const authenticated = sessionStorage.getItem('admin_authenticated');
-    
-    if (!session || authenticated !== 'true') {
-        window.location.href = 'login.html';
-        return false;
-    }
-    
     try {
+        const session = localStorage.getItem('admin_session');
+        const authenticated = sessionStorage.getItem('admin_authenticated');
+        
+        if (!session || authenticated !== 'true') {
+            window.location.href = 'login.html';
+            return false;
+        }
+        
         const sessionData = JSON.parse(session);
         const loginTime = new Date(sessionData.login_time);
         const now = new Date();
@@ -109,11 +64,11 @@ function toggleTheme() {
     
     if (body.classList.contains('light-theme')) {
         body.classList.remove('light-theme');
-        icon.className = 'fas fa-moon';
+        if (icon) icon.className = 'fas fa-moon';
         localStorage.setItem('theme', 'dark');
     } else {
         body.classList.add('light-theme');
-        icon.className = 'fas fa-sun';
+        if (icon) icon.className = 'fas fa-sun';
         localStorage.setItem('theme', 'light');
     }
 }
@@ -146,176 +101,7 @@ function showNotification(message, type = 'success') {
     
     // Adiciona estilos se não existirem
     if (!document.querySelector('style[data-notification-styles]')) {
-        const style = document.createElement('style');
-        style.setAttribute('data-notification-styles', 'true');
-        style.textContent = `
-            .notification {
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                background: var(--bg-card);
-                border: 1px solid var(--border-color);
-                border-radius: 12px;
-                padding: 16px;
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                min-width: 300px;
-                max-width: 400px;
-                box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-                z-index: 10000;
-                transform: translateX(400px);
-                transition: transform 0.3s ease;
-            }
-            .notification.show {
-                transform: translateX(0);
-            }
-            .notification.success {
-                border-left: 4px solid var(--success);
-            }
-            .notification.error {
-                border-left: 4px solid var(--danger);
-            }
-            .notification.warning {
-                border-left: 4px solid var(--warning);
-            }
-            .notification-icon {
-                width: 32px;
-                height: 32px;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                flex-shrink: 0;
-            }
-            .notification.success .notification-icon {
-                background: rgba(0, 214, 143, 0.1);
-                color: var(--success);
-            }
-            .notification.error .notification-icon {
-                background: rgba(255, 61, 113, 0.1);
-                color: var(--danger);
-            }
-            .notification.warning .notification-icon {
-                background: rgba(255, 170, 0, 0.1);
-                color: var(--warning);
-            }
-            .notification-title {
-                font-weight: 600;
-                color: var(--text-primary);
-                margin-bottom: 2px;
-            }
-            .notification-message {
-                font-size: 0.9rem;
-                color: var(--text-secondary);
-            }
-            .password-field {
-                display: flex;
-                flex-direction: column;
-                gap: 4px;
-            }
-            .current-password {
-                font-size: 0.75rem;
-                color: var(--text-muted);
-                font-family: monospace;
-            }
-            .loading {
-                text-align: center;
-                color: var(--text-muted);
-                font-style: italic;
-                padding: 40px !important;
-            }
-            .loading i {
-                font-size: 24px;
-                margin-bottom: 8px;
-                display: block;
-            }
-            .empty-state {
-                text-align: center;
-                color: var(--text-muted);
-                font-style: italic;
-                padding: 40px !important;
-            }
-            .empty-state i {
-                font-size: 48px;
-                margin-bottom: 12px;
-                display: block;
-                opacity: 0.5;
-            }
-            .status-badge, .subscription-badge {
-                display: inline-flex;
-                align-items: center;
-                gap: 6px;
-                padding: 4px 8px;
-                border-radius: 6px;
-                font-size: 0.8rem;
-                font-weight: 500;
-            }
-            .status-badge.active {
-                background: rgba(0, 214, 143, 0.1);
-                color: var(--success);
-            }
-            .status-badge.banned {
-                background: rgba(255, 61, 113, 0.1);
-                color: var(--danger);
-            }
-            .subscription-badge.valid {
-                background: rgba(0, 214, 143, 0.1);
-                color: var(--success);
-            }
-            .subscription-badge.warning {
-                background: rgba(255, 170, 0, 0.1);
-                color: var(--warning);
-            }
-            .subscription-badge.expired {
-                background: rgba(255, 61, 113, 0.1);
-                color: var(--danger);
-            }
-            .subscription-badge.no-expiry {
-                background: rgba(0, 180, 216, 0.1);
-                color: var(--info);
-            }
-            .subscription-cell {
-                display: flex;
-                flex-direction: column;
-                gap: 8px;
-            }
-            .actions-cell {
-                display: flex;
-                gap: 4px;
-                flex-wrap: wrap;
-            }
-            .hwid-display {
-                font-family: monospace;
-                font-size: 0.85rem;
-                color: var(--text-secondary);
-                word-break: break-all;
-                max-width: 120px;
-                display: block;
-            }
-            .date-input {
-                font-size: 0.85rem;
-                padding: 4px 6px;
-            }
-            .btn-sm {
-                padding: 6px 8px;
-                font-size: 0.8rem;
-            }
-            .form-control {
-                background: var(--bg-input);
-                border: 1px solid var(--border-color);
-                border-radius: 6px;
-                padding: 6px 10px;
-                color: var(--text-primary);
-                font-size: 0.9rem;
-            }
-            .form-control:focus {
-                outline: none;
-                border-color: var(--primary);
-                box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
-            }
-        `;
-        document.head.appendChild(style);
+        addNotificationStyles();
     }
     
     document.body.appendChild(notification);
@@ -330,6 +116,149 @@ function showNotification(message, type = 'success') {
     }, 4000);
 }
 
+function addNotificationStyles() {
+    const style = document.createElement('style');
+    style.setAttribute('data-notification-styles', 'true');
+    style.textContent = `
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 300px;
+            max-width: 400px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            z-index: 10000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+        }
+        .notification.show {
+            transform: translateX(0);
+        }
+        .notification.success {
+            border-left: 4px solid var(--success);
+        }
+        .notification.error {
+            border-left: 4px solid var(--danger);
+        }
+        .notification.warning {
+            border-left: 4px solid var(--warning);
+        }
+        .notification-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .notification.success .notification-icon {
+            background: rgba(0, 214, 143, 0.1);
+            color: var(--success);
+        }
+        .notification.error .notification-icon {
+            background: rgba(255, 61, 113, 0.1);
+            color: var(--danger);
+        }
+        .notification.warning .notification-icon {
+            background: rgba(255, 170, 0, 0.1);
+            color: var(--warning);
+        }
+        .notification-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+        }
+        .notification-message {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+// --- FUNÇÃO CENTRALIZADA PARA CHAMADAS DE API ---
+async function apiCall(endpoint, method = 'GET', body = null, retries = 3) {
+    let lastError;
+    
+    for (let attempt = 1; attempt <= retries; attempt++) {
+        try {
+            console.log(`Tentativa ${attempt}/${retries} - Fazendo chamada para: ${endpoint}`);
+            
+            const options = {
+                method,
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                }
+            };
+            
+            if (body && method !== 'GET') {
+                options.body = JSON.stringify(body);
+            }
+
+            let url = `${API_BASE_URL}/${endpoint}`;
+            if (method === 'GET' && body) {
+                const params = new URLSearchParams();
+                Object.keys(body).forEach(key => {
+                    if (body[key] !== null && body[key] !== undefined) {
+                        params.append(key, body[key]);
+                    }
+                });
+                if (params.toString()) {
+                    url += '?' + params.toString();
+                }
+            }
+
+            console.log(`API Call: ${method} ${url}`, options.body ? JSON.parse(options.body) : null);
+
+            const response = await fetch(url, options);
+            let result;
+            
+            try {
+                result = await response.json();
+            } catch (parseError) {
+                console.error('Erro ao processar JSON da resposta:', parseError);
+                throw new Error(`Erro ao processar resposta da API: ${response.statusText}`);
+            }
+
+            if (!response.ok) {
+                const errorMessage = result.message || `Erro HTTP ${response.status}: ${response.statusText}`;
+                console.error(`Erro da API (${response.status}):`, errorMessage);
+                throw new Error(errorMessage);
+            }
+            
+            console.log(`Sucesso na chamada para ${endpoint}:`, result);
+            return result;
+            
+        } catch (error) {
+            lastError = error;
+            console.error(`Erro na tentativa ${attempt} para ${endpoint}:`, error);
+            
+            // Se for erro de rede e ainda temos tentativas, aguarda antes de tentar novamente
+            if (attempt < retries && (error.name === 'TypeError' || error.message.includes('fetch'))) {
+                console.log(`Aguardando antes da próxima tentativa...`);
+                await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+                continue;
+            }
+            
+            // Se não é erro de rede ou é a última tentativa, lança o erro
+            break;
+        }
+    }
+    
+    console.error(`Erro na chamada da API para ${endpoint} após ${retries} tentativas:`, lastError);
+    throw lastError;
+}
+
+// --- FUNÇÕES DE HASH ---
 async function hashSHA256(str) {
     try {
         if (window.crypto && window.crypto.subtle) {
@@ -347,67 +276,42 @@ async function hashSHA256(str) {
     }
 }
 
+async function sha256Fallback(str) {
+    // Implementação simplificada para fallback
+    return new Promise((resolve) => {
+        // Hash básico para desenvolvimento - substitua por uma implementação real em produção
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            const char = str.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash;
+        }
+        resolve(Math.abs(hash).toString(16));
+    });
+}
+
+// --- FUNÇÕES UTILITÁRIAS DE DATA ---
 function calcularDiasRestantes(dateString) {
     if (!dateString) return null;
-    const expiryDate = new Date(dateString);
-    const today = new Date();
-    const timeDiff = expiryDate.getTime() - today.getTime();
-    return Math.ceil(timeDiff / (1000 * 3600 * 24));
+    try {
+        const expiryDate = new Date(dateString);
+        const today = new Date();
+        const timeDiff = expiryDate.getTime() - today.getTime();
+        return Math.ceil(timeDiff / (1000 * 3600 * 24));
+    } catch (error) {
+        console.error('Erro ao calcular dias restantes:', error);
+        return null;
+    }
 }
 
 function formatarDataParaInput(dateString) {
     if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toISOString().split('T')[0];
-}
-
-// --- FUNÇÃO CENTRALIZADA PARA CHAMADAS DE API ---
-async function apiCall(endpoint, method = 'GET', body = null) {
     try {
-        const options = {
-            method,
-            headers: { 
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            }
-        };
-        
-        if (body && method !== 'GET') {
-            options.body = JSON.stringify(body);
-        }
-
-        let url = `${API_BASE_URL}/${endpoint}`;
-        if (method === 'GET' && body) {
-            const params = new URLSearchParams();
-            Object.keys(body).forEach(key => {
-                if (body[key] !== null && body[key] !== undefined) {
-                    params.append(key, body[key]);
-                }
-            });
-            if (params.toString()) {
-                url += '?' + params.toString();
-            }
-        }
-
-        console.log(`Fazendo chamada para: ${url}`, { method, body });
-
-        const response = await fetch(url, options);
-        let result;
-        
-        try {
-            result = await response.json();
-        } catch (e) {
-            throw new Error(`Erro ao processar resposta da API: ${response.statusText}`);
-        }
-
-        if (!response.ok) {
-            throw new Error(result.message || `Erro HTTP ${response.status}: ${response.statusText}`);
-        }
-        
-        return result;
+        const date = new Date(dateString);
+        return date.toISOString().split('T')[0];
     } catch (error) {
-        console.error(`Erro na chamada da API para ${endpoint}:`, error);
-        throw error;
+        console.error('Erro ao formatar data:', error);
+        return '';
     }
 }
 
@@ -415,34 +319,73 @@ async function apiCall(endpoint, method = 'GET', body = null) {
 async function atualizarEstatisticas() {
     try {
         console.log('Atualizando estatísticas...');
-        const usuarios = await apiCall('getUsers', 'GET');
         
-        const totalUsuarios = usuarios.length;
-        const usuariosAtivos = usuarios.filter(user => !user.banned).length;
-        const usuariosBanidos = totalUsuarios - usuariosAtivos;
+        // Tentar usar endpoint específico primeiro
+        let stats;
+        try {
+            stats = await apiCall('getStats', 'GET');
+            console.log('Estatísticas obtidas via API getStats:', stats);
+        } catch (error) {
+            console.log('Endpoint getStats não disponível, calculando via getUsers...');
+            // Fallback: buscar usuários e calcular manualmente
+            const usuarios = await apiCall('getUsers', 'GET');
+            stats = calculateStatsFromUsers(usuarios);
+        }
         
-        // Atualizar cards de estatísticas
-        const totalUsersEl = document.getElementById('totalUsers');
-        const activeUsersEl = document.getElementById('activeUsers');
-        const bannedUsersEl = document.getElementById('bannedUsers');
-        const userCountEl = document.getElementById('userCount');
-        const affectedCountEl = document.getElementById('affectedCount');
-        
-        if (totalUsersEl) totalUsersEl.textContent = totalUsuarios;
-        if (activeUsersEl) activeUsersEl.textContent = usuariosAtivos;
-        if (bannedUsersEl) bannedUsersEl.textContent = usuariosBanidos;
-        if (userCountEl) userCountEl.textContent = totalUsuarios;
-        if (affectedCountEl) affectedCountEl.textContent = usuariosAtivos;
-        
-        console.log('Estatísticas atualizadas:', { totalUsuarios, usuariosAtivos, usuariosBanidos });
+        updateStatsDisplay(stats);
+        console.log('Estatísticas atualizadas:', stats);
         
     } catch (error) {
         console.error('Erro ao atualizar estatísticas:', error);
-        showNotification('Erro ao carregar estatísticas: ' + error.message, 'error');
+        displayStatsError();
     }
 }
 
-// --- FUNÇÕES DE INTERAÇÃO COM A API ---
+function calculateStatsFromUsers(usuarios) {
+    const today = new Date();
+    
+    return {
+        totalUsuarios: usuarios.length,
+        usuariosAtivos: usuarios.filter(user => !user.banned).length,
+        usuariosBanidos: usuarios.filter(user => user.banned).length,
+        usuariosExpirados: usuarios.filter(user => {
+            if (!user.date_expiry) return false;
+            return new Date(user.date_expiry) < today;
+        }).length,
+        versao: '1.0.0'
+    };
+}
+
+function updateStatsDisplay(stats) {
+    const elementos = {
+        totalUsers: stats.totalUsuarios,
+        activeUsers: stats.usuariosAtivos,
+        bannedUsers: stats.usuariosBanidos,
+        userCount: stats.totalUsuarios,
+        affectedCount: stats.usuariosAtivos,
+        currentVersion: `v${stats.versao}`
+    };
+    
+    Object.keys(elementos).forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.textContent = elementos[id];
+        }
+    });
+}
+
+function displayStatsError() {
+    const errorElements = ['totalUsers', 'activeUsers', 'bannedUsers', 'userCount', 'affectedCount'];
+    errorElements.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.textContent = 'Erro';
+        }
+    });
+    showNotification('Erro ao carregar estatísticas. Verifique a conexão.', 'error');
+}
+
+// --- FUNÇÕES DE USUÁRIOS ---
 async function carregarUsuarios() {
     const tbody = document.querySelector("#usersTable tbody");
     if (!tbody) {
@@ -459,82 +402,85 @@ async function carregarUsuarios() {
         const usuarios = await apiCall('getUsers', 'GET', searchValue ? { search: searchValue } : null);
         console.log('Usuários carregados:', usuarios);
         
-        // Limpar tabela
-        tbody.innerHTML = "";
-        
-        if (usuarios.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><i class="fas fa-user-slash"></i><br>Nenhum usuário encontrado</td></tr>';
-            return;
-        }
-
-        usuarios.forEach(user => {
-            const tr = document.createElement("tr");
-            const bannedStatus = user.banned ? 
-                '<span class="status-badge banned"><i class="fas fa-ban"></i> Banido</span>' : 
-                '<span class="status-badge active"><i class="fas fa-check"></i> Ativo</span>';
-            
-            const diasRestantes = calcularDiasRestantes(user.date_expiry);
-            let assinaturaStatus = '';
-            
-            if (diasRestantes === null) {
-                assinaturaStatus = '<span class="subscription-badge no-expiry"><i class="fas fa-infinity"></i> Sem limite</span>';
-            } else if (diasRestantes < 0) {
-                assinaturaStatus = `<span class="subscription-badge expired"><i class="fas fa-times"></i> Expirada (${Math.abs(diasRestantes)} dias)</span>`;
-            } else if (diasRestantes <= 7) {
-                assinaturaStatus = `<span class="subscription-badge warning"><i class="fas fa-exclamation-triangle"></i> ${diasRestantes} dias</span>`;
-            } else {
-                assinaturaStatus = `<span class="subscription-badge valid"><i class="fas fa-check"></i> ${diasRestantes} dias</span>`;
-            }
-            
-            // Mascarar senha se existir (mostrar apenas primeiros caracteres)
-            const senhaDisplay = user.password ? 
-                user.password.substring(0, 8) + '...' : 
-                'Não definida';
-            
-            tr.innerHTML = `
-                <td><strong>#${user.id}</strong></td>
-                <td><input type="text" value="${user.username || ''}" id="username-${user.id}" placeholder="Username" class="form-control"></td>
-                <td>
-                    <div class="password-field">
-                        <small class="current-password">Hash: ${senhaDisplay}</small>
-                        <input type="password" placeholder="Nova senha" id="password-${user.id}" class="form-control">
-                    </div>
-                </td>
-                <td><span class="hwid-display">${user.hwid || '<em>Não definido</em>'}</span></td>
-                <td>
-                    <div class="subscription-cell">
-                        ${assinaturaStatus}
-                        <input type="date" id="expiry-${user.id}" value="${formatarDataParaInput(user.date_expiry)}" class="date-input form-control" title="Data de expiração">
-                    </div>
-                </td>
-                <td>${bannedStatus}</td>
-                <td>
-                    <div class="actions-cell">
-                        <button onclick="atualizarUsuario(${user.id})" class="btn btn-success btn-sm" title="Salvar alterações">
-                            <i class="fas fa-save"></i>
-                        </button>
-                        <button onclick="toggleBanUsuario(${user.id}, ${user.banned})" class="btn ${user.banned ? 'btn-info' : 'btn-danger'} btn-sm" title="${user.banned ? 'Desbanir' : 'Banir'}">
-                            <i class="fas fa-${user.banned ? 'user-check' : 'ban'}"></i>
-                        </button>
-                        <button onclick="deletarUsuario(${user.id})" class="btn btn-danger btn-sm" title="Deletar usuário">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                        <button onclick="resetHwid(${user.id})" class="btn btn-warning btn-sm" title="Resetar HWID">
-                            <i class="fas fa-refresh"></i>
-                        </button>
-                    </div>
-                </td>
-            `;
-            tbody.appendChild(tr);
-        });
-        
-        // Atualizar estatísticas após carregar usuários
+        renderUsers(usuarios, tbody);
         await atualizarEstatisticas();
         
     } catch (error) {
         console.error('Erro ao carregar usuários:', error);
-        showNotification('Erro ao carregar usuários: ' + error.message, 'error');
         tbody.innerHTML = `<tr><td colspan="7" class="empty-state"><i class="fas fa-exclamation-triangle"></i><br>Erro: ${error.message}</td></tr>`;
+        showNotification('Erro ao carregar usuários: ' + error.message, 'error');
+    }
+}
+
+function renderUsers(usuarios, tbody) {
+    tbody.innerHTML = "";
+    
+    if (usuarios.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><i class="fas fa-user-slash"></i><br>Nenhum usuário encontrado</td></tr>';
+        return;
+    }
+
+    usuarios.forEach(user => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = createUserRow(user);
+        tbody.appendChild(tr);
+    });
+}
+
+function createUserRow(user) {
+    const bannedStatus = user.banned ? 
+        '<span class="status-badge banned"><i class="fas fa-ban"></i> Banido</span>' : 
+        '<span class="status-badge active"><i class="fas fa-check"></i> Ativo</span>';
+    
+    const diasRestantes = calcularDiasRestantes(user.date_expiry);
+    const assinaturaStatus = getSubscriptionBadge(diasRestantes);
+    const senhaDisplay = user.password ? user.password.substring(0, 8) + '...' : 'Não definida';
+    
+    return `
+        <td><strong>#${user.id}</strong></td>
+        <td><input type="text" value="${user.username || ''}" id="username-${user.id}" placeholder="Username" class="form-control"></td>
+        <td>
+            <div class="password-field">
+                <small class="current-password">Hash: ${senhaDisplay}</small>
+                <input type="password" placeholder="Nova senha" id="password-${user.id}" class="form-control">
+            </div>
+        </td>
+        <td><span class="hwid-display">${user.hwid || '<em>Não definido</em>'}</span></td>
+        <td>
+            <div class="subscription-cell">
+                ${assinaturaStatus}
+                <input type="date" id="expiry-${user.id}" value="${formatarDataParaInput(user.date_expiry)}" class="date-input form-control" title="Data de expiração">
+            </div>
+        </td>
+        <td>${bannedStatus}</td>
+        <td>
+            <div class="actions-cell">
+                <button onclick="atualizarUsuario(${user.id})" class="btn btn-success btn-sm" title="Salvar alterações">
+                    <i class="fas fa-save"></i>
+                </button>
+                <button onclick="toggleBanUsuario(${user.id}, ${user.banned})" class="btn ${user.banned ? 'btn-info' : 'btn-danger'} btn-sm" title="${user.banned ? 'Desbanir' : 'Banir'}">
+                    <i class="fas fa-${user.banned ? 'user-check' : 'ban'}"></i>
+                </button>
+                <button onclick="deletarUsuario(${user.id})" class="btn btn-danger btn-sm" title="Deletar usuário">
+                    <i class="fas fa-trash"></i>
+                </button>
+                <button onclick="resetHwid(${user.id})" class="btn btn-warning btn-sm" title="Resetar HWID">
+                    <i class="fas fa-refresh"></i>
+                </button>
+            </div>
+        </td>
+    `;
+}
+
+function getSubscriptionBadge(diasRestantes) {
+    if (diasRestantes === null) {
+        return '<span class="subscription-badge no-expiry"><i class="fas fa-infinity"></i> Sem limite</span>';
+    } else if (diasRestantes < 0) {
+        return `<span class="subscription-badge expired"><i class="fas fa-times"></i> Expirada (${Math.abs(diasRestantes)} dias)</span>`;
+    } else if (diasRestantes <= 7) {
+        return `<span class="subscription-badge warning"><i class="fas fa-exclamation-triangle"></i> ${diasRestantes} dias</span>`;
+    } else {
+        return `<span class="subscription-badge valid"><i class="fas fa-check"></i> ${diasRestantes} dias</span>`;
     }
 }
 
@@ -562,7 +508,8 @@ async function atualizarUsuario(id) {
         await apiCall('updateUser', 'POST', { id, updates });
         
         showNotification("Usuário atualizado com sucesso!");
-        document.querySelector(`#password-${id}`).value = '';
+        const passwordElement = document.querySelector(`#password-${id}`);
+        if (passwordElement) passwordElement.value = '';
         await carregarUsuarios();
 
     } catch (error) {
@@ -614,29 +561,32 @@ async function resetHwid(id) {
     }
 }
 
+// --- FUNÇÕES DE CONFIGURAÇÃO ---
 async function carregarVersao() {
     try {
         console.log('Carregando configurações...');
         const config = await apiCall('getConfig', 'GET');
         
-        const currentVersionEl = document.getElementById('currentVersion');
-        if (currentVersionEl) {
-            currentVersionEl.textContent = `v${config.versao}`;
-        }
-        
-        // Atualizar também na aba de versão
-        const versionTags = document.querySelectorAll('.version-tag');
-        versionTags.forEach(tag => {
-            tag.textContent = `v${config.versao}`;
-        });
-        
+        updateVersionDisplay(config.versao || '1.0.0');
         console.log('Versão carregada:', config.versao);
         
     } catch (error) {
         console.error('Erro ao carregar versão:', error);
-        const currentVersionEl = document.getElementById('currentVersion');
-        if (currentVersionEl) currentVersionEl.textContent = 'Erro';
+        updateVersionDisplay('Erro');
     }
+}
+
+function updateVersionDisplay(versao) {
+    const currentVersionEl = document.getElementById('currentVersion');
+    if (currentVersionEl) {
+        currentVersionEl.textContent = versao === 'Erro' ? 'Erro' : `v${versao}`;
+    }
+    
+    // Atualizar também na aba de versão
+    const versionTags = document.querySelectorAll('.version-tag');
+    versionTags.forEach(tag => {
+        tag.textContent = versao === 'Erro' ? 'Erro' : `v${versao}`;
+    });
 }
 
 async function atualizarVersao() {
@@ -658,13 +608,11 @@ async function atualizarVersao() {
         console.log('Atualizando versão para:', novaVersao);
         await apiCall('updateVersion', 'POST', { novaVersao });
         showNotification(`Versão atualizada para v${novaVersao}!`);
-        document.getElementById('versionInput').value = '';
         
-        // Atualizar a exibição da versão atual
-        const currentVersionEl = document.getElementById('currentVersion');
-        if (currentVersionEl) currentVersionEl.textContent = `v${novaVersao}`;
+        const versionInput = document.getElementById('versionInput');
+        if (versionInput) versionInput.value = '';
         
-        // Adicionar ao histórico
+        updateVersionDisplay(novaVersao);
         adicionarAoHistoricoVersao(novaVersao);
         
     } catch (error) {
@@ -693,6 +641,7 @@ function adicionarAoHistoricoVersao(versao) {
     }
 }
 
+// --- FUNÇÕES GLOBAIS ---
 async function adicionarTempoGlobal() {
     const daysInput = document.getElementById('daysInput');
     const days = daysInput?.value?.trim();
@@ -708,7 +657,7 @@ async function adicionarTempoGlobal() {
         console.log('Adicionando tempo global:', days, 'dias');
         const result = await apiCall('addGlobalTime', 'POST', { days: parseInt(days) });
         showNotification(result.message);
-        daysInput.value = '';
+        if (daysInput) daysInput.value = '';
         await carregarUsuarios();
     } catch (error) {
         console.error('Erro ao adicionar tempo global:', error);
@@ -754,6 +703,236 @@ async function resetGlobalHwid() {
     }
 }
 
+// --- FUNÇÕES DE MODAL ---
+function openCreateUserModal() {
+    if (document.getElementById('createUserModal')) return; // Evita modais duplicados
+    
+    const modalHTML = `
+        <div id="createUserModal" class="modal" style="display: flex;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i class="fas fa-user-plus"></i> Criar Novo Usuário</h3>
+                    <button onclick="closeCreateUserModal()" class="btn-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Username:</label>
+                        <input type="text" id="newUsername" class="form-control" placeholder="Digite o username">
+                    </div>
+                    <div class="form-group">
+                        <label>Senha:</label>
+                        <input type="password" id="newPassword" class="form-control" placeholder="Digite a senha">
+                    </div>
+                    <div class="form-group">
+                        <label>Dias de assinatura (opcional):</label>
+                        <input type="number" id="newUserDays" class="form-control" placeholder="Ex: 30" min="1" max="365">
+                        <small>Deixe em branco para assinatura sem limite</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button onclick="closeCreateUserModal()" class="btn btn-secondary">Cancelar</button>
+                    <button onclick="criarNovoUsuario()" class="btn btn-success">Criar Usuário</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    addModalStyles();
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+}
+
+function closeCreateUserModal() {
+    const modal = document.getElementById('createUserModal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+function addModalStyles() {
+    if (document.querySelector('style[data-modal-styles]')) return;
+    
+    const style = document.createElement('style');
+    style.setAttribute('data-modal-styles', 'true');
+    style.textContent = `
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        }
+        .modal-content {
+            background: var(--bg-card);
+            border-radius: 16px;
+            width: 90%;
+            max-width: 500px;
+            border: 1px solid var(--border-color);
+        }
+        .modal-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-header h3 {
+            margin: 0;
+            color: var(--text-primary);
+        }
+        .btn-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--text-secondary);
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+        }
+        .btn-close:hover {
+            background: var(--tab-inactive);
+        }
+        .modal-body {
+            padding: 24px;
+        }
+        .modal-footer {
+            padding: 20px 24px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        .form-group small {
+            display: block;
+            margin-top: 4px;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+        .form-control {
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 8px 12px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
+        }
+        .password-field {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .current-password {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-family: monospace;
+        }
+        .status-badge, .subscription-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        .status-badge.active {
+            background: rgba(0, 214, 143, 0.1);
+            color: var(--success);
+        }
+        .status-badge.banned {
+            background: rgba(255, 61, 113, 0.1);
+            color: var(--danger);
+        }
+        .subscription-badge.valid {
+            background: rgba(0, 214, 143, 0.1);
+            color: var(--success);
+        }
+        .subscription-badge.warning {
+            background: rgba(255, 170, 0, 0.1);
+            color: var(--warning);
+        }
+        .subscription-badge.expired {
+            background: rgba(255, 61, 113, 0.1);
+            color: var(--danger);
+        }
+        .subscription-badge.no-expiry {
+            background: rgba(0, 180, 216, 0.1);
+            color: var(--info);
+        }
+        .subscription-cell {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .actions-cell {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+        .hwid-display {
+            font-family: monospace;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            word-break: break-all;
+            max-width: 120px;
+            display: block;
+        }
+        .date-input {
+            font-size: 0.85rem;
+            padding: 4px 6px;
+        }
+        .btn-sm {
+            padding: 6px 8px;
+            font-size: 0.8rem;
+        }
+        .loading, .empty-state {
+            text-align: center !important;
+            color: var(--text-muted) !important;
+            font-style: italic;
+            padding: 40px !important;
+        }
+        .loading i, .empty-state i {
+            display: block;
+            margin-bottom: 12px;
+            font-size: 32px;
+            opacity: 0.6;
+        }
+        .loading i {
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    `;
+    document.head.appendChild(style);
+}
+
 async function criarNovoUsuario() {
     const username = document.getElementById('newUsername')?.value?.trim();
     const password = document.getElementById('newPassword')?.value;
@@ -788,12 +967,7 @@ async function criarNovoUsuario() {
         await apiCall('createUser', 'POST', { username, hashedPassword, expiryDate });
         
         showNotification(`Usuário "${username}" criado com sucesso!`);
-        
-        // Limpar campos
-        document.getElementById('newUsername').value = '';
-        document.getElementById('newPassword').value = '';
-        document.getElementById('newUserDays').value = '';
-        
+        closeCreateUserModal();
         await carregarUsuarios();
         
     } catch (error) {
@@ -802,131 +976,7 @@ async function criarNovoUsuario() {
     }
 }
 
-// Função para criar modal de novo usuário (já que a função openCreateUserModal é chamada no HTML)
-function openCreateUserModal() {
-    // Vamos criar um modal simples
-    const modalHTML = `
-        <div id="createUserModal" class="modal" style="display: flex;">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3><i class="fas fa-user-plus"></i> Criar Novo Usuário</h3>
-                    <button onclick="closeCreateUserModal()" class="btn-close">&times;</button>
-                </div>
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label>Username:</label>
-                        <input type="text" id="newUsername" class="form-control" placeholder="Digite o username">
-                    </div>
-                    <div class="form-group">
-                        <label>Senha:</label>
-                        <input type="password" id="newPassword" class="form-control" placeholder="Digite a senha">
-                    </div>
-                    <div class="form-group">
-                        <label>Dias de assinatura (opcional):</label>
-                        <input type="number" id="newUserDays" class="form-control" placeholder="Ex: 30" min="1" max="365">
-                        <small>Deixe em branco para assinatura sem limite</small>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button onclick="closeCreateUserModal()" class="btn btn-secondary">Cancelar</button>
-                    <button onclick="criarNovoUsuario()" class="btn btn-success">Criar Usuário</button>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    // Adicionar estilos do modal se não existirem
-    if (!document.querySelector('style[data-modal-styles]')) {
-        const style = document.createElement('style');
-        style.setAttribute('data-modal-styles', 'true');
-        style.textContent = `
-            .modal {
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: rgba(0,0,0,0.5);
-                display: none;
-                align-items: center;
-                justify-content: center;
-                z-index: 10000;
-            }
-            .modal-content {
-                background: var(--bg-card);
-                border-radius: 16px;
-                width: 90%;
-                max-width: 500px;
-                border: 1px solid var(--border-color);
-            }
-            .modal-header {
-                padding: 20px 24px;
-                border-bottom: 1px solid var(--border-color);
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-            }
-            .modal-header h3 {
-                margin: 0;
-                color: var(--text-primary);
-            }
-            .btn-close {
-                background: none;
-                border: none;
-                font-size: 24px;
-                cursor: pointer;
-                color: var(--text-secondary);
-                padding: 0;
-                width: 32px;
-                height: 32px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                border-radius: 8px;
-            }
-            .btn-close:hover {
-                background: var(--tab-inactive);
-            }
-            .modal-body {
-                padding: 24px;
-            }
-            .modal-footer {
-                padding: 20px 24px;
-                border-top: 1px solid var(--border-color);
-                display: flex;
-                gap: 12px;
-                justify-content: flex-end;
-            }
-            .form-group {
-                margin-bottom: 16px;
-            }
-            .form-group label {
-                display: block;
-                margin-bottom: 6px;
-                color: var(--text-secondary);
-                font-weight: 500;
-            }
-            .form-group small {
-                display: block;
-                margin-top: 4px;
-                color: var(--text-muted);
-                font-size: 0.85rem;
-            }
-        `;
-        document.head.appendChild(style);
-    }
-    
-    document.body.insertAdjacentHTML('beforeend', modalHTML);
-}
-
-function closeCreateUserModal() {
-    const modal = document.getElementById('createUserModal');
-    if (modal) {
-        modal.remove();
-    }
-}
-
-// Função para atualizar informações do sistema
+// --- FUNÇÕES DE SISTEMA ---
 async function atualizarInfoSistema() {
     try {
         const lastUpdateEl = document.getElementById('lastUpdate');
@@ -936,11 +986,13 @@ async function atualizarInfoSistema() {
             lastUpdateEl.textContent = new Date().toLocaleString('pt-BR');
         }
         
-        if (memoryUsageEl && performance && performance.memory) {
-            const used = Math.round(performance.memory.usedJSHeapSize / 1024 / 1024);
-            memoryUsageEl.textContent = `${used} MB`;
-        } else if (memoryUsageEl) {
-            memoryUsageEl.textContent = 'N/A';
+        if (memoryUsageEl) {
+            if (performance && performance.memory) {
+                const used = Math.round(performance.memory.usedJSHeapSize / 1024 / 1024);
+                memoryUsageEl.textContent = `${used} MB`;
+            } else {
+                memoryUsageEl.textContent = 'N/A';
+            }
         }
         
     } catch (error) {
@@ -948,10 +1000,10 @@ async function atualizarInfoSistema() {
     }
 }
 
-// Funções para logs
+// --- FUNÇÕES DE LOGS ---
 function refreshLogs() {
     showNotification('Logs atualizados!');
-    // Aqui você implementaria a lógica para recarregar os logs do servidor
+    addLog('Logs atualizados pelo administrador', 'info');
     console.log('Atualizando logs...');
 }
 
@@ -965,7 +1017,6 @@ function clearLogs() {
     }
 }
 
-// Função para adicionar log
 function addLog(message, type = 'info', time = null) {
     const logsList = document.getElementById('logsList');
     if (!logsList) return;
@@ -984,7 +1035,7 @@ function addLog(message, type = 'info', time = null) {
         <div class="log-icon"><i class="fas fa-${icons[type] || 'info'}"></i></div>
         <div class="log-content">
             <div class="log-message">${message}</div>
-            <div class="log-time">${time || 'Agora'}</div>
+            <div class="log-time">${time || new Date().toLocaleTimeString('pt-BR')}</div>
         </div>
     `;
     
@@ -997,7 +1048,7 @@ function addLog(message, type = 'info', time = null) {
     }
 }
 
-// Função para switch de abas
+// --- FUNÇÃO DE NAVEGAÇÃO DE ABAS ---
 function switchTab(tabName) {
     // Remover classe active de todas as abas
     document.querySelectorAll('.tab-content').forEach(tab => {
@@ -1016,200 +1067,225 @@ function switchTab(tabName) {
     }
     
     // Adicionar classe active ao botão clicado
-    const clickedButton = event.target.closest('.tab-btn');
-    if (clickedButton) {
-        clickedButton.classList.add('active');
-    }
+    const buttons = document.querySelectorAll('.tab-btn');
+    buttons.forEach((btn, index) => {
+        const tabNames = ['usuarios', 'sistema', 'versao', 'global', 'logs'];
+        if (tabNames[index] === tabName) {
+            btn.classList.add('active');
+        }
+    });
     
     // Carregar dados específicos da aba se necessário
-    if (tabName === 'usuarios') {
-        carregarUsuarios();
-    } else if (tabName === 'sistema') {
-        atualizarInfoSistema();
+    switch (tabName) {
+        case 'usuarios':
+            carregarUsuarios();
+            break;
+        case 'sistema':
+            atualizarInfoSistema();
+            break;
+        case 'versao':
+            carregarVersao();
+            break;
+        case 'logs':
+            addLog('Aba de logs acessada', 'info');
+            break;
     }
 }
 
-// Função fallback para SHA256 (caso crypto.subtle não esteja disponível)
-async function sha256Fallback(str) {
-    return new Promise((resolve) => {
-        function rightRotate(value, amount) {
-            return (value >>> amount) | (value << (32 - amount));
-        }
-        
-        function sha256Hash(str) {
-            const h = [
-                0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
-                0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19
-            ];
-            
-            const k = [
-                0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
-                0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
-                0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
-                0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
-                0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
-                0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
-                0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
-                0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
-            ];
-            
-            const msg = new TextEncoder().encode(str);
-            const msgLength = msg.length * 8;
-            const blockCount = Math.ceil((msgLength + 1 + 64) / 512);
-            const totalLength = blockCount * 512;
-            const paddedMsg = new Uint8Array(totalLength / 8);
-            
-            paddedMsg.set(msg);
-            paddedMsg[msg.length] = 0x80;
-            
-            const dataView = new DataView(paddedMsg.buffer);
-            dataView.setUint32(paddedMsg.length - 4, msgLength, false);
-            
-            for (let i = 0; i < paddedMsg.length; i += 64) {
-                const w = new Uint32Array(64);
-                
-                for (let j = 0; j < 16; j++) {
-                    w[j] = dataView.getUint32(i + j * 4, false);
-                }
-                
-                for (let j = 16; j < 64; j++) {
-                    const s0 = rightRotate(w[j - 15], 7) ^ rightRotate(w[j - 15], 18) ^ (w[j - 15] >>> 3);
-                    const s1 = rightRotate(w[j - 2], 17) ^ rightRotate(w[j - 2], 19) ^ (w[j - 2] >>> 10);
-                    w[j] = (w[j - 16] + s0 + w[j - 7] + s1) >>> 0;
-                }
-                
-                let [a, b, c, d, e, f, g, h1] = h;
-                
-                for (let j = 0; j < 64; j++) {
-                    const S1 = rightRotate(e, 6) ^ rightRotate(e, 11) ^ rightRotate(e, 25);
-                    const ch = (e & f) ^ (~e & g);
-                    const temp1 = (h1 + S1 + ch + k[j] + w[j]) >>> 0;
-                    const S0 = rightRotate(a, 2) ^ rightRotate(a, 13) ^ rightRotate(a, 22);
-                    const maj = (a & b) ^ (a & c) ^ (b & c);
-                    const temp2 = (S0 + maj) >>> 0;
-                    
-                    h1 = g;
-                    g = f;
-                    f = e;
-                    e = (d + temp1) >>> 0;
-                    d = c;
-                    c = b;
-                    b = a;
-                    a = (temp1 + temp2) >>> 0;
-                }
-                
-                h[0] = (h[0] + a) >>> 0;
-                h[1] = (h[1] + b) >>> 0;
-                h[2] = (h[2] + c) >>> 0;
-                h[3] = (h[3] + d) >>> 0;
-                h[4] = (h[4] + e) >>> 0;
-                h[5] = (h[5] + f) >>> 0;
-                h[6] = (h[6] + g) >>> 0;
-                h[7] = (h[7] + h1) >>> 0;
+// --- INICIALIZAÇÃO E EVENT LISTENERS ---
+function setupEventListeners() {
+    // Configurar busca com debounce
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+        let searchTimeout;
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                console.log('Realizando busca:', this.value);
+                carregarUsuarios();
+            }, 300);
+        });
+
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                clearTimeout(searchTimeout);
+                carregarUsuarios();
             }
-            
-            return h.map(x => x.toString(16).padStart(8, '0')).join('');
+        });
+    }
+    
+    // Configurar switches de configuração
+    const twoFactorToggle = document.getElementById('2faToggle');
+    const ipVerificationToggle = document.getElementById('ipVerification');
+    
+    if (twoFactorToggle) {
+        twoFactorToggle.addEventListener('change', function() {
+            const label = this.parentElement.nextElementSibling;
+            if (label) {
+                label.textContent = this.checked ? 'Ativado' : 'Desativado';
+            }
+        });
+    }
+    
+    if (ipVerificationToggle) {
+        ipVerificationToggle.addEventListener('change', function() {
+            const label = this.parentElement.nextElementSibling;
+            if (label) {
+                label.textContent = this.checked ? 'Ativado' : 'Desativado';
+            }
+        });
+    }
+
+    // Event listeners para modais (fechar com ESC)
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeCreateUserModal();
         }
-        
-        resolve(sha256Hash(str));
+    });
+
+    // Event listeners para clicks fora do modal
+    document.addEventListener('click', function(e) {
+        const modal = document.getElementById('createUserModal');
+        if (modal && e.target === modal) {
+            closeCreateUserModal();
+        }
     });
 }
 
-// --- INICIALIZAÇÃO DA PÁGINA ---
-document.addEventListener('DOMContentLoaded', function() {
+function startPeriodicUpdates() {
+    // Atualizar estatísticas e informações do sistema periodicamente
+    setInterval(() => {
+        try {
+            atualizarEstatisticas();
+            atualizarInfoSistema();
+        } catch (error) {
+            console.error('Erro na atualização periódica:', error);
+        }
+    }, 30000); // A cada 30 segundos
+}
+
+function initializeSystem() {
     console.log('Inicializando painel administrativo...');
     
-    if (checkAuthentication()) {
-        console.log('Usuário autenticado, carregando dados...');
-        
+    if (!checkAuthentication()) {
+        console.log('Usuário não autenticado, redirecionando...');
+        return;
+    }
+
+    console.log('Usuário autenticado, carregando dados...');
+    
+    try {
         // Carregar tema
         loadTheme();
         
+        // Configurar event listeners
+        setupEventListeners();
+        
         // Carregar dados iniciais
-        atualizarEstatisticas();
-        carregarUsuarios();
-        carregarVersao();
-        atualizarInfoSistema();
+        Promise.all([
+            atualizarEstatisticas(),
+            carregarUsuarios(),
+            carregarVersao(),
+            atualizarInfoSistema()
+        ]).then(() => {
+            console.log('Dados iniciais carregados com sucesso');
+            addLog('Sistema inicializado com sucesso', 'success');
+        }).catch(error => {
+            console.error('Erro ao carregar dados iniciais:', error);
+            addLog(`Erro na inicialização: ${error.message}`, 'error');
+        });
         
-        // Configurar busca com debounce
-        const searchInput = document.getElementById('searchInput');
-        if (searchInput) {
-            let searchTimeout;
-            searchInput.addEventListener('input', function() {
-                clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(() => {
-                    console.log('Realizando busca:', this.value);
-                    carregarUsuarios();
-                }, 300);
-            });
-
-            searchInput.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    clearTimeout(searchTimeout);
-                    carregarUsuarios();
-                }
-            });
-        }
-        
-        // Configurar switches de configuração
-        const twoFactorToggle = document.getElementById('2faToggle');
-        const ipVerificationToggle = document.getElementById('ipVerification');
-        
-        if (twoFactorToggle) {
-            twoFactorToggle.addEventListener('change', function() {
-                const label = this.parentElement.nextElementSibling;
-                if (label) {
-                    label.textContent = this.checked ? 'Ativado' : 'Desativado';
-                }
-            });
-        }
-        
-        if (ipVerificationToggle) {
-            ipVerificationToggle.addEventListener('change', function() {
-                const label = this.parentElement.nextElementSibling;
-                if (label) {
-                    label.textContent = this.checked ? 'Ativado' : 'Desativado';
-                }
-            });
-        }
-        
-        // Atualizar estatísticas periodicamente
-        setInterval(() => {
-            atualizarEstatisticas();
-            atualizarInfoSistema();
-        }, 30000); // A cada 30 segundos
+        // Iniciar atualizações periódicas
+        startPeriodicUpdates();
         
         console.log('Inicialização concluída!');
-    } else {
-        console.log('Usuário não autenticado, redirecionando...');
-    }
-});
-
-// Adicionar event listeners globais
-window.addEventListener('error', function(error) {
-    console.error('Erro global capturado:', error);
-    addLog(`Erro do sistema: ${error.message}`, 'error');
-});
-
-// Interceptar chamadas de API para adicionar aos logs
-const originalFetch = window.fetch;
-window.fetch = async function(...args) {
-    const [url, options = {}] = args;
-    const method = options.method || 'GET';
-    
-    try {
-        console.log(`API Call: ${method} ${url}`, options.body ? JSON.parse(options.body) : null);
-        const response = await originalFetch.apply(this, args);
         
-        if (response.ok) {
-            addLog(`API: ${method} ${url.split('/').pop()} - Sucesso`, 'success');
-        } else {
-            addLog(`API: ${method} ${url.split('/').pop()} - Erro ${response.status}`, 'error');
-        }
-        
-        return response;
     } catch (error) {
-        addLog(`API: ${method} ${url.split('/').pop()} - Erro: ${error.message}`, 'error');
-        throw error;
+        console.error('Erro durante a inicialização:', error);
+        showNotification('Erro durante a inicialização do sistema', 'error');
+        addLog(`Erro crítico na inicialização: ${error.message}`, 'error');
     }
-};
+}
+
+// --- EVENT LISTENERS GLOBAIS ---
+function setupGlobalEventListeners() {
+    // Interceptar erros globais
+    window.addEventListener('error', function(error) {
+        console.error('Erro global capturado:', error);
+        addLog(`Erro do sistema: ${error.message}`, 'error');
+    });
+
+    // Interceptar erros não tratados de Promises
+    window.addEventListener('unhandledrejection', function(event) {
+        console.error('Promise rejeitada não tratada:', event.reason);
+        addLog(`Erro de promise: ${event.reason}`, 'error');
+        event.preventDefault(); // Previne que o erro apareça no console
+    });
+
+    // Interceptar problemas de rede
+    window.addEventListener('offline', function() {
+        showNotification('Conexão perdida! Verifique sua internet.', 'warning');
+        addLog('Conexão com a internet perdida', 'warning');
+    });
+
+    window.addEventListener('online', function() {
+        showNotification('Conexão restabelecida!', 'success');
+        addLog('Conexão com a internet restabelecida', 'success');
+        // Recarregar dados após reconexão
+        setTimeout(() => {
+            atualizarEstatisticas();
+            carregarUsuarios();
+        }, 1000);
+    });
+}
+
+// --- INICIALIZAÇÃO PRINCIPAL ---
+document.addEventListener('DOMContentLoaded', function() {
+    setupGlobalEventListeners();
+    initializeSystem();
+});
+
+// --- INTERCEPTADOR DE FETCH PARA LOGS ---
+(function() {
+    const originalFetch = window.fetch;
+    window.fetch = async function(...args) {
+        const [url, options = {}] = args;
+        const method = options.method || 'GET';
+        const endpoint = url.split('/').pop();
+        
+        try {
+            console.log(`API Call: ${method} ${url}`, options.body ? JSON.parse(options.body) : null);
+            const response = await originalFetch.apply(this, args);
+            
+            if (response.ok) {
+                addLog(`API: ${method} ${endpoint} - Sucesso`, 'success');
+            } else {
+                addLog(`API: ${method} ${endpoint} - Erro ${response.status}`, 'error');
+            }
+            
+            return response;
+        } catch (error) {
+            addLog(`API: ${method} ${endpoint} - Falha: ${error.message}`, 'error');
+            throw error;
+        }
+    };
+})();
+
+// --- FUNÇÕES EXPOSTAS GLOBALMENTE ---
+window.toggleTheme = toggleTheme;
+window.logout = logout;
+window.switchTab = switchTab;
+window.carregarUsuarios = carregarUsuarios;
+window.atualizarUsuario = atualizarUsuario;
+window.deletarUsuario = deletarUsuario;
+window.toggleBanUsuario = toggleBanUsuario;
+window.resetHwid = resetHwid;
+window.openCreateUserModal = openCreateUserModal;
+window.closeCreateUserModal = closeCreateUserModal;
+window.criarNovoUsuario = criarNovoUsuario;
+window.atualizarVersao = atualizarVersao;
+window.adicionarTempoGlobal = adicionarTempoGlobal;
+window.limparExpirados = limparExpirados;
+window.resetGlobalHwid = resetGlobalHwid;
+window.refreshLogs = refreshLogs;
+window.clearLogs = clearLogs;

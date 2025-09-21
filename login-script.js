@@ -1,99 +1,57 @@
-// login-script.js
+// login-script.js - VERSÃO CORRIGIDA
 
-let userIP = null;
-
-// Sistema de Temas
-function toggleTheme() {
-    const body = document.body;
-    const themeToggle = document.getElementById('themeToggle');
-    const icon = themeToggle.querySelector('i');
-
-    if (body.classList.contains('light-theme')) {
-        // Mudar para tema escuro
-        body.classList.remove('light-theme');
-        body.classList.add('dark-theme');
-        icon.className = 'fas fa-sun';
-        localStorage.setItem('theme', 'dark');
-    } else {
-        // Mudar para tema claro
-        body.classList.remove('dark-theme');
-        body.classList.add('light-theme');
-        icon.className = 'fas fa-moon';
-        localStorage.setItem('theme', 'light');
-    }
-}
-
-// Carregar tema salvo
-function loadTheme() {
-    const savedTheme = localStorage.getItem('theme');
-    const body = document.body;
-    const themeToggle = document.getElementById('themeToggle');
-    const icon = themeToggle.querySelector('i');
-
-    if (savedTheme === 'light') {
-        body.classList.add('light-theme');
-        icon.className = 'fas fa-moon';
-    } else {
-        // Tema escuro por padrão
-        body.classList.add('dark-theme');
-        icon.className = 'fas fa-sun';
-    }
-}
-
-// Função para mostrar notificações
-function showNotification(message, type = 'success') {
-    const notification = document.createElement('div');
-    notification.className = `notification ${type}`;
-    notification.innerHTML = `<i class="fas fa-${getIconForType(type)}"></i> ${message}`;
-    document.body.appendChild(notification);
-
-    setTimeout(() => notification.classList.add('show'), 100);
-    setTimeout(() => {
-        notification.classList.remove('show');
-        setTimeout(() => {
-            if (document.body.contains(notification)) {
-                document.body.removeChild(notification);
-            }
-        }, 300);
-    }, 4000);
-}
-
-function getIconForType(type) {
-    const icons = {
-        success: 'check',
-        error: 'exclamation-triangle',
-        warning: 'exclamation',
-        info: 'info'
-    };
-    return icons[type] || 'info';
-}
+// Configurações
+const API_BASE_URL = '/.netlify/functions';
 
 // Função para obter IP do usuário
-async function getUserIP() {
+async function getCurrentIP() {
     try {
-        const response = await fetch('https://api.ipify.org?format=json');
-        const data = await response.json();
-        userIP = data.ip;
-        document.getElementById('userIP').textContent = userIP;
-        return userIP;
+        // Tentar várias APIs para obter IP
+        const ipServices = [
+            'https://api.ipify.org?format=json',
+            'https://httpbin.org/ip',
+            'https://api.my-ip.io/ip.json'
+        ];
+        
+        for (const service of ipServices) {
+            try {
+                const response = await fetch(service);
+                const data = await response.json();
+                
+                // Diferentes APIs retornam o IP em campos diferentes
+                const ip = data.ip || data.origin || data.query;
+                if (ip) {
+                    console.log('IP obtido:', ip);
+                    return ip;
+                }
+            } catch (error) {
+                console.warn(`Falha ao obter IP de ${service}:`, error);
+                continue;
+            }
+        }
+        
+        // Fallback: usar IP local para desenvolvimento
+        console.warn('Não foi possível obter IP real, usando fallback');
+        return '127.0.0.1';
+        
     } catch (error) {
         console.error('Erro ao obter IP:', error);
-        document.getElementById('userIP').textContent = 'Erro ao obter IP';
-        showNotification('Não foi possível obter seu IP. Tente novamente.', 'warning');
-        return null;
+        return '127.0.0.1'; // Fallback para localhost
     }
 }
 
-// Função para gerar SHA-256 (versão compatível)
+// Função para gerar hash SHA-256
 async function hashSHA256(str) {
     try {
-        if (window.crypto && window.crypto.subtle && window.crypto.subtle.digest) {
+        if (window.crypto && window.crypto.subtle) {
             const encoder = new TextEncoder();
             const data = encoder.encode(str);
-            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-            const hashArray = Array.from(new Uint8Array(hashBuffer));
-            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            const hash = await crypto.subtle.digest('SHA-256', data);
+            return Array.from(new Uint8Array(hash))
+                .map(b => b.toString(16).padStart(2, '0'))
+                .join('');
         } else {
+            // Fallback para navegadores sem crypto.subtle
             return await sha256Fallback(str);
         }
     } catch (error) {
@@ -102,81 +60,241 @@ async function hashSHA256(str) {
     }
 }
 
-// Implementação SHA-256 pura em JavaScript (fallback)
+// Fallback para SHA-256 (implementação simples)
 async function sha256Fallback(str) {
-    function rightRotate(value, amount) {
-        return (value >>> amount) | (value << (32 - amount));
+    // Para desenvolvimento - em produção use uma biblioteca como crypto-js
+    console.warn('Usando fallback de hash - não recomendado para produção');
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        const char = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash;
     }
-    
-    function sha256Hash(message) {
-        const h=[0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19],k=[0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
-        const msgBytes=new TextEncoder().encode(message),msgBits=8*msgBytes.length,paddedLength=512*Math.ceil((msgBits+1+64)/512),padded=new Uint8Array(paddedLength/8);padded.set(msgBytes),padded[msgBytes.length]=128;
-        const view=new DataView(padded.buffer);view.setUint32(padded.length-4,msgBits,false);
-        for(let chunk=0;chunk<padded.length;chunk+=64){const w=new Uint32Array(64);for(let i=0;i<16;i++)w[i]=view.getUint32(chunk+4*i,false);for(let i=16;i<64;i++){const s0=rightRotate(w[i-15],7)^rightRotate(w[i-15],18)^w[i-15]>>>3,s1=rightRotate(w[i-2],17)^rightRotate(w[i-2],19)^w[i-2]>>>10;w[i]=w[i-16]+s0+w[i-7]+s1>>>0}let[a,b,c,d,e,f,g,h2]=h;
-        for(let i=0;i<64;i++){const S1=rightRotate(e,6)^rightRotate(e,11)^rightRotate(e,25),ch=e&f^~e&g,temp1=h2+S1+ch+k[i]+w[i]>>>0,S0=rightRotate(a,2)^rightRotate(a,13)^rightRotate(a,22),maj=a&b^a&c^b&c,temp2=S0+maj>>>0;h2=g,g=f,f=e,e=d+temp1>>>0,d=c,c=b,b=a,a=temp1+temp2>>>0}h[0]=h[0]+a>>>0,h[1]=h[1]+b>>>0,h[2]=h[2]+c>>>0,h[3]=h[3]+d>>>0,h[4]=h[4]+e>>>0,h[5]=h[5]+f>>>0,h[6]=h[6]+g>>>0,h[7]=h[7]+h2>>>0}
-        return h.map(x=>x.toString(16).padStart(8,'0')).join('');
-    }
-    return sha256Hash(str);
+    return Math.abs(hash).toString(16).padStart(8, '0');
 }
 
-// Função de login MODIFICADA
-async function login(username, password, currentIP) {
+// Função para mostrar notificações
+function showNotification(message, type = 'info') {
+    // Remover notificação existente
+    const existingNotification = document.querySelector('.notification');
+    if (existingNotification) {
+        existingNotification.remove();
+    }
+
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    
+    const icons = {
+        success: 'fas fa-check-circle',
+        error: 'fas fa-exclamation-triangle',
+        warning: 'fas fa-exclamation-circle',
+        info: 'fas fa-info-circle'
+    };
+    
+    notification.innerHTML = `
+        <i class="${icons[type] || icons.info}"></i>
+        <span>${message}</span>
+    `;
+    
+    // Adicionar estilos se não existirem
+    if (!document.querySelector('#notification-styles')) {
+        const style = document.createElement('style');
+        style.id = 'notification-styles';
+        style.textContent = `
+            .notification {
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 20px;
+                border-radius: 8px;
+                color: white;
+                font-weight: 500;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                z-index: 10000;
+                min-width: 300px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+                transform: translateX(100%);
+                transition: transform 0.3s ease;
+            }
+            .notification.show {
+                transform: translateX(0);
+            }
+            .notification-success {
+                background: linear-gradient(45deg, #4CAF50, #45a049);
+            }
+            .notification-error {
+                background: linear-gradient(45deg, #f44336, #d32f2f);
+            }
+            .notification-warning {
+                background: linear-gradient(45deg, #ff9800, #f57c00);
+            }
+            .notification-info {
+                background: linear-gradient(45deg, #2196F3, #1976D2);
+            }
+            .notification i {
+                font-size: 18px;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
+    document.body.appendChild(notification);
+    
+    // Animar entrada
+    setTimeout(() => notification.classList.add('show'), 100);
+    
+    // Remover após alguns segundos
+    setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => {
+            if (document.body.contains(notification)) {
+                document.body.removeChild(notification);
+            }
+        }, 300);
+    }, 5000);
+}
+
+// Função para mostrar/ocultar loader
+function toggleLoader(show = true) {
+    const loader = document.querySelector('.loader');
+    const submitBtn = document.querySelector('#submitBtn');
+    
+    if (loader) {
+        loader.style.display = show ? 'flex' : 'none';
+    }
+    
+    if (submitBtn) {
+        submitBtn.disabled = show;
+        submitBtn.innerHTML = show ? 
+            '<i class="fas fa-spinner fa-spin"></i> Entrando...' : 
+            '<i class="fas fa-sign-in-alt"></i> Entrar';
+    }
+}
+
+// Função principal de login
+async function login(event) {
+    event.preventDefault();
+    
+    const username = document.getElementById('username')?.value?.trim();
+    const password = document.getElementById('password')?.value;
+    
+    // Validações básicas
+    if (!username || !password) {
+        showNotification('Por favor, preencha todos os campos.', 'warning');
+        return;
+    }
+    
+    if (username.length < 3) {
+        showNotification('Username deve ter pelo menos 3 caracteres.', 'warning');
+        return;
+    }
+    
+    if (password.length < 6) {
+        showNotification('Senha deve ter pelo menos 6 caracteres.', 'warning');
+        return;
+    }
+    
+    toggleLoader(true);
+    
     try {
+        // Obter IP atual
+        const currentIP = await getCurrentIP();
+        
+        // Gerar hash da senha
         const hashedPassword = await hashSHA256(password);
-        console.log('Tentando login com:', { username, currentIP });
-
-        const response = await fetch('/.netlify/functions/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                username,
-                hashedPassword,
-                currentIP
-            })
-        });
-
-        const result = await response.json();
-
-        if (!response.ok) {
-            // Lança um erro com a mensagem vinda do backend
-            throw new Error(result.message || 'Erro desconhecido no servidor.');
-        }
-
-        // Salvar sessão se o login for bem-sucedido
-        const session = {
-            user_id: result.user.id,
-            username: result.user.username,
-            ip: currentIP,
-            login_time: new Date().toISOString()
+        
+        const loginData = {
+            username: username,
+            hashedPassword: hashedPassword,
+            currentIP: currentIP
         };
-
-        localStorage.setItem('admin_session', JSON.stringify(session));
-        sessionStorage.setItem('admin_authenticated', 'true');
-
-        return { success: true, user: result.user };
-
+        
+        console.log('Tentando login com:', {
+            username: loginData.username,
+            ip: loginData.currentIP,
+            hashedPassword: loginData.hashedPassword.substring(0, 10) + '...'
+        });
+        
+        // Fazer requisição de login
+        const response = await fetch(`${API_BASE_URL}/login`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(loginData)
+        });
+        
+        let result;
+        try {
+            result = await response.json();
+        } catch (parseError) {
+            console.error('Erro ao fazer parse da resposta:', parseError);
+            throw new Error('Resposta inválida do servidor');
+        }
+        
+        console.log('Resposta do servidor:', result);
+        
+        if (result.success) {
+            // Login bem-sucedido
+            const sessionData = {
+                username: result.user.username,
+                user_id: result.user.id,
+                role: result.user.role || 'admin',
+                login_time: new Date().toISOString(),
+                ip: currentIP
+            };
+            
+            // Salvar sessão
+            localStorage.setItem('admin_session', JSON.stringify(sessionData));
+            sessionStorage.setItem('admin_authenticated', 'true');
+            
+            showNotification('Login realizado com sucesso! Redirecionando...', 'success');
+            
+            // Limpar campos
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+            
+            // Redirecionar após pequeno delay
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 1500);
+            
+        } else {
+            // Login falhou
+            const errorMessage = result.message || 'Credenciais inválidas';
+            showNotification(errorMessage, 'error');
+            
+            // Casos específicos de erro
+            if (result.error_code === 'TABLE_NOT_FOUND') {
+                showNotification('Sistema não configurado. Contate o administrador.', 'error');
+            }
+        }
+        
     } catch (error) {
         console.error('Erro no login:', error);
-        throw error; // Propaga o erro para o event listener do formulário
+        
+        let errorMessage = 'Erro de conexão. Verifique sua internet e tente novamente.';
+        
+        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            errorMessage = 'Não foi possível conectar ao servidor. Verifique sua conexão.';
+        } else if (error.message.includes('JSON')) {
+            errorMessage = 'Erro de comunicação com o servidor.';
+        } else if (error.message) {
+            errorMessage = error.message;
+        }
+        
+        showNotification(errorMessage, 'error');
+        
+    } finally {
+        toggleLoader(false);
     }
 }
 
-// Função para alternar visibilidade da senha
-function togglePassword() {
-    const passwordInput = document.getElementById('password');
-    const toggleIcon = document.querySelector('.toggle-password i');
-    
-    if (passwordInput.type === 'password') {
-        passwordInput.type = 'text';
-        toggleIcon.className = 'fas fa-eye-slash';
-    } else {
-        passwordInput.type = 'password';
-        toggleIcon.className = 'fas fa-eye';
-    }
-}
-
-// Verificar se já está logado
-function checkExistingSession() {
+// Função para verificar se já está logado
+function checkIfLoggedIn() {
     const session = localStorage.getItem('admin_session');
     const authenticated = sessionStorage.getItem('admin_authenticated');
     
@@ -187,16 +305,16 @@ function checkExistingSession() {
             const now = new Date();
             const hoursDiff = (now - loginTime) / (1000 * 60 * 60);
             
-            // Sessão válida por 24 horas
-            if (hoursDiff < 24 && sessionData.ip === userIP) {
-                showNotification('Você já está logado!', 'info');
-                setTimeout(() => {
-                    window.location.href = 'index.html';
-                }, 1500);
-                return true;
+            if (hoursDiff < 24) {
+                // Sessão ainda válida, redirecionar
+                console.log('Usuário já logado, redirecionando...');
+                window.location.href = 'index.html';
+                return;
             } else {
+                // Sessão expirada
                 localStorage.removeItem('admin_session');
                 sessionStorage.removeItem('admin_authenticated');
+                showNotification('Sessão expirada. Faça login novamente.', 'warning');
             }
         } catch (error) {
             console.error('Erro ao verificar sessão:', error);
@@ -204,66 +322,75 @@ function checkExistingSession() {
             sessionStorage.removeItem('admin_authenticated');
         }
     }
-    return false;
 }
 
-// Event Listeners
-document.addEventListener('DOMContentLoaded', async function() {
-    loadTheme();
-    await getUserIP();
+// Função para toggle de mostrar/ocultar senha
+function togglePassword() {
+    const passwordInput = document.getElementById('password');
+    const toggleIcon = document.querySelector('.toggle-password i');
     
-    if (checkExistingSession()) {
-        return;
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        toggleIcon.classList.remove('fa-eye');
+        toggleIcon.classList.add('fa-eye-slash');
+    } else {
+        passwordInput.type = 'password';
+        toggleIcon.classList.remove('fa-eye-slash');
+        toggleIcon.classList.add('fa-eye');
+    }
+}
+
+// Event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Página de login carregada');
+    
+    // Verificar se já está logado
+    checkIfLoggedIn();
+    
+    // Configurar formulário de login
+    const loginForm = document.getElementById('loginForm');
+    if (loginForm) {
+        loginForm.addEventListener('submit', login);
     }
     
-    const loginForm = document.getElementById('loginForm');
-    const loginBtn = document.getElementById('loginBtn');
+    // Configurar toggle de senha
+    const togglePasswordBtn = document.querySelector('.toggle-password');
+    if (togglePasswordBtn) {
+        togglePasswordBtn.addEventListener('click', togglePassword);
+    }
+    
+    // Focus no primeiro campo
     const usernameInput = document.getElementById('username');
-    const passwordInput = document.getElementById('password');
+    if (usernameInput) {
+        usernameInput.focus();
+    }
     
-    loginForm.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        if (!userIP) {
-            showNotification('IP não carregado. Recarregue a página.', 'error');
-            return;
-        }
-        
-        const username = usernameInput.value.trim();
-        const password = passwordInput.value;
-        
-        if (!username || !password) {
-            showNotification('Preencha todos os campos!', 'warning');
-            return;
-        }
-        
-        loginBtn.disabled = true;
-        loginBtn.classList.add('loading');
-        loginBtn.innerHTML = '<i class="fas fa-spinner"></i> Entrando...';
-        
-        try {
-            const result = await login(username, password, userIP);
-            
-            if (result.success) {
-                showNotification(`Bem-vindo, ${result.user.username}!`, 'success');
-                setTimeout(() => {
-                    window.location.href = 'index.html';
-                }, 1500);
+    // Enter para submeter em qualquer campo
+    const inputs = document.querySelectorAll('input');
+    inputs.forEach(input => {
+        input.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                const form = document.getElementById('loginForm');
+                if (form) {
+                    form.dispatchEvent(new Event('submit'));
+                }
             }
-        } catch (error) {
-            showNotification(error.message, 'error');
-        } finally {
-            loginBtn.disabled = false;
-            loginBtn.classList.remove('loading');
-            loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Entrar';
-        }
-    });
-    
-    usernameInput.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') passwordInput.focus();
-    });
-    
-    passwordInput.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') loginForm.dispatchEvent(new Event('submit'));
+        });
     });
 });
+
+// Interceptar erros globais
+window.addEventListener('error', function(error) {
+    console.error('Erro global capturado:', error);
+    showNotification('Ocorreu um erro inesperado. Recarregue a página.', 'error');
+});
+
+window.addEventListener('unhandledrejection', function(event) {
+    console.error('Promise rejeitada:', event.reason);
+    event.preventDefault();
+});
+
+// Exportar funções para uso global
+window.login = login;
+window.togglePassword = togglePassword;
+window.showNotification = showNotification;
