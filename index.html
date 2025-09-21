@@ -6,7 +6,6 @@
     <title>Admin Supabase</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-
 </head>
 <body>
     <!-- Animated Background -->
@@ -63,7 +62,7 @@
                     <div class="stat-icon">
                         <i class="fas fa-users"></i>
                     </div>
-                    <div class="stat-value" id="totalUsers">0</div>
+                    <div class="stat-value" id="totalUsers">-</div>
                     <div class="stat-label">Total de Usuários</div>
                 </div>
             </div>
@@ -72,7 +71,7 @@
                     <div class="stat-icon">
                         <i class="fas fa-user-check"></i>
                     </div>
-                    <div class="stat-value" id="activeUsers">0</div>
+                    <div class="stat-value" id="activeUsers">-</div>
                     <div class="stat-label">Usuários Ativos</div>
                 </div>
             </div>
@@ -81,7 +80,7 @@
                     <div class="stat-icon">
                         <i class="fas fa-user-slash"></i>
                     </div>
-                    <div class="stat-value" id="bannedUsers">0</div>
+                    <div class="stat-value" id="bannedUsers">-</div>
                     <div class="stat-label">Usuários Banidos</div>
                 </div>
             </div>
@@ -102,7 +101,7 @@
                 <button class="tab-btn active" onclick="switchTab('usuarios')">
                     <i class="fas fa-users"></i>
                     <span>Usuários</span>
-                    <span class="tab-badge" id="userCount">0</span>
+                    <span class="tab-badge" id="userCount">-</span>
                 </button>
                 <button class="tab-btn" onclick="switchTab('sistema')">
                     <i class="fas fa-cogs"></i>
@@ -159,7 +158,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <!-- Table content will be loaded here -->
+                        <tr><td colspan="7" class="loading"><i class="fas fa-spinner fa-spin"></i><br>Carregando...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -319,7 +318,7 @@
                         <label class="form-label">Usuários Afetados</label>
                         <div class="affected-users">
                             <span class="badge badge-info">
-                                <i class="fas fa-users"></i> <span id="affectedCount">0</span> usuários ativos
+                                <i class="fas fa-users"></i> <span id="affectedCount">-</span> usuários ativos
                             </span>
                         </div>
                     </div>
@@ -387,25 +386,11 @@
                     </div>
                 </div>
                 <div class="logs-list" id="logsList">
-                    <div class="log-item log-success">
-                        <div class="log-icon"><i class="fas fa-check"></i></div>
-                        <div class="log-content">
-                            <div class="log-message">Usuário 'user123' criado com sucesso</div>
-                            <div class="log-time">Há 5 minutos</div>
-                        </div>
-                    </div>
-                    <div class="log-item log-warning">
-                        <div class="log-icon"><i class="fas fa-exclamation"></i></div>
-                        <div class="log-content">
-                            <div class="log-message">Tentativa de login falhada para 'admin'</div>
-                            <div class="log-time">Há 15 minutos</div>
-                        </div>
-                    </div>
                     <div class="log-item log-info">
                         <div class="log-icon"><i class="fas fa-info"></i></div>
                         <div class="log-content">
-                            <div class="log-message">Versão atualizada para v1.0.0</div>
-                            <div class="log-time">Há 1 hora</div>
+                            <div class="log-message">Sistema inicializado com sucesso</div>
+                            <div class="log-time">Agora</div>
                         </div>
                     </div>
                 </div>
@@ -413,9 +398,9 @@
         </div>
     </div>
 
-    <!-- Additional Styles -->
+    <!-- Styles Adicionais -->
     <style>
-        /* Additional specific styles */
+        /* Estilos específicos adicionais */
         .info-row {
             display: flex;
             justify-content: space-between;
@@ -678,136 +663,34 @@
             color: var(--text-muted);
             font-size: 0.85rem;
         }
+
+        /* Loading e Empty States */
+        .loading, .empty-state {
+            text-align: center !important;
+            color: var(--text-muted) !important;
+            font-style: italic;
+            padding: 40px !important;
+        }
+
+        .loading i, .empty-state i {
+            display: block;
+            margin-bottom: 12px;
+            font-size: 32px;
+            opacity: 0.6;
+        }
+
+        .loading i {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
     </style>
 
+    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script>
-        // Tab switching functionality
-        function switchTab(tabName) {
-            // Hide all tabs
-            document.querySelectorAll('.tab-content').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            
-            // Remove active class from all buttons
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            
-            // Show selected tab
-            document.getElementById(`${tabName}-tab`).classList.add('active');
-            
-            // Add active class to clicked button
-            event.target.closest('.tab-btn').classList.add('active');
-        }
-
-        // Theme toggle
-        function toggleTheme() {
-            const body = document.body;
-            const icon = document.getElementById('themeIcon');
-            
-            if (body.classList.contains('light-theme')) {
-                body.classList.remove('light-theme');
-                icon.className = 'fas fa-moon';
-                localStorage.setItem('theme', 'dark');
-            } else {
-                body.classList.add('light-theme');
-                icon.className = 'fas fa-sun';
-                localStorage.setItem('theme', 'light');
-            }
-        }
-
-        // Load theme on page load
-        window.addEventListener('DOMContentLoaded', () => {
-            const savedTheme = localStorage.getItem('theme');
-            if (savedTheme === 'light') {
-                document.body.classList.add('light-theme');
-                document.getElementById('themeIcon').className = 'fas fa-sun';
-            }
-            
-            // Initialize counts
-            updateCounts();
-            
-            // Load initial data
-            carregarUsuarios();
-        });
-
-        function updateCounts() {
-            // These would be fetched from your API
-            document.getElementById('totalUsers').textContent = '156';
-            document.getElementById('activeUsers').textContent = '142';
-            document.getElementById('bannedUsers').textContent = '14';
-            document.getElementById('userCount').textContent = '156';
-            document.getElementById('affectedCount').textContent = '142';
-        }
-
-        // Notification function
-        function showNotification(message, type = 'success') {
-            const notification = document.createElement('div');
-            notification.className = `notification ${type}`;
-            notification.innerHTML = `
-                <div class="notification-icon">
-                    <i class="fas fa-${type === 'success' ? 'check' : 'exclamation-triangle'}"></i>
-                </div>
-                <div class="notification-content">
-                    <div class="notification-title">${type === 'success' ? 'Sucesso!' : 'Erro!'}</div>
-                    <div class="notification-message">${message}</div>
-                </div>
-            `;
-            document.body.appendChild(notification);
-            setTimeout(() => notification.classList.add('show'), 100);
-            setTimeout(() => {
-                notification.classList.remove('show');
-                setTimeout(() => document.body.removeChild(notification), 300);
-            }, 3000);
-        }
-
-        // Placeholder functions - replace with actual API calls
-        function carregarUsuarios() {
-            // Load users implementation
-            console.log('Loading users...');
-        }
-
-        function atualizarVersao() {
-            showNotification('Versão atualizada com sucesso!');
-        }
-
-        function adicionarTempoGlobal() {
-            showNotification('Tempo adicionado para todos os usuários ativos!');
-        }
-
-        function limparExpirados() {
-            if (confirm('Tem certeza que deseja limpar os usuários expirados?')) {
-                showNotification('Usuários expirados removidos com sucesso!');
-            }
-        }
-
-        function resetGlobalHwid() {
-            if (confirm('Tem certeza que deseja resetar todos os HWIDs?')) {
-                showNotification('Todos os HWIDs foram resetados!');
-            }
-        }
-
-        function refreshLogs() {
-            showNotification('Logs atualizados!');
-        }
-
-        function clearLogs() {
-            if (confirm('Tem certeza que deseja limpar os logs?')) {
-                showNotification('Logs limpos com sucesso!');
-            }
-        }
-
-        function logout() {
-            if (confirm('Deseja realmente sair do sistema?')) {
-                window.location.href = 'login.html';
-            }
-        }
-
-        function openCreateUserModal() {
-            // Implementation for create user modal
-            showNotification('Função de criar usuário em desenvolvimento');
-        }
-    </script>
+    <script src="script.js"></script>
 </body>
 </html>
