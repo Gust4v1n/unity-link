@@ -6,113 +6,808 @@
     <title>Admin Supabase</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+
 </head>
 <body>
-    <div class="container">
+    <!-- Animated Background -->
+    <div class="bg-animation">
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+    </div>
+
+    <div class="main-container">
+        <!-- Header -->
         <div class="header">
-            <div class="theme-toggle">
-                <button id="themeToggle" class="btn-theme" onclick="toggleTheme()">
-                    <i class="fas fa-sun"></i>
+            <div class="header-content">
+                <div class="header-left">
+                    <div class="logo">
+                        <i class="fas fa-database"></i>
+                    </div>
+                    <div class="header-title">
+                        <h1>Admin Supabase</h1>
+                        <p>Painel de Administração</p>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <div class="user-info">
+                        <div class="user-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="user-details">
+                            <span>Logado como</span>
+                            <strong id="currentUser">Admin</strong>
+                        </div>
+                    </div>
+                    <button class="btn-icon" onclick="toggleTheme()" title="Alternar tema">
+                        <i class="fas fa-moon" id="themeIcon"></i>
+                    </button>
+                    <button class="btn-icon btn-logout" onclick="logout()" title="Sair">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-content">
+                    <div class="stat-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-value" id="totalUsers">0</div>
+                    <div class="stat-label">Total de Usuários</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-content">
+                    <div class="stat-icon">
+                        <i class="fas fa-user-check"></i>
+                    </div>
+                    <div class="stat-value" id="activeUsers">0</div>
+                    <div class="stat-label">Usuários Ativos</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-content">
+                    <div class="stat-icon">
+                        <i class="fas fa-user-slash"></i>
+                    </div>
+                    <div class="stat-value" id="bannedUsers">0</div>
+                    <div class="stat-label">Usuários Banidos</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-content">
+                    <div class="stat-icon">
+                        <i class="fas fa-code-branch"></i>
+                    </div>
+                    <div class="stat-value" id="currentVersion">v1.0.0</div>
+                    <div class="stat-label">Versão do Sistema</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs Navigation -->
+        <div class="tabs-container">
+            <div class="tabs-nav">
+                <button class="tab-btn active" onclick="switchTab('usuarios')">
+                    <i class="fas fa-users"></i>
+                    <span>Usuários</span>
+                    <span class="tab-badge" id="userCount">0</span>
+                </button>
+                <button class="tab-btn" onclick="switchTab('sistema')">
+                    <i class="fas fa-cogs"></i>
+                    <span>Sistema</span>
+                </button>
+                <button class="tab-btn" onclick="switchTab('versao')">
+                    <i class="fas fa-code-branch"></i>
+                    <span>Versão</span>
+                </button>
+                <button class="tab-btn" onclick="switchTab('global')">
+                    <i class="fas fa-globe"></i>
+                    <span>Ações Globais</span>
+                </button>
+                <button class="tab-btn" onclick="switchTab('logs')">
+                    <i class="fas fa-history"></i>
+                    <span>Logs</span>
                 </button>
             </div>
-            <h1><i class="fas fa-database"></i> Admin Supabase</h1>
-            <p>Gerenciamento de Usuários</p>
         </div>
 
-        <div class="stats" id="stats">
-            <div class="stat-card">
-                <i class="fas fa-users"></i>
-                <h3 id="totalUsers">-</h3>
-                <p>Total de Usuários</p>
+        <!-- Tab Contents -->
+        <!-- Usuarios Tab -->
+        <div id="usuarios-tab" class="tab-content active">
+            <!-- Search Section -->
+            <div class="search-section">
+                <div class="search-wrapper">
+                    <div class="search-input-wrapper">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" id="searchInput" class="search-input" placeholder="Pesquisar por username...">
+                    </div>
+                    <button onclick="carregarUsuarios()" class="btn btn-primary">
+                        <i class="fas fa-search"></i>
+                        Pesquisar
+                    </button>
+                    <button onclick="openCreateUserModal()" class="btn btn-success">
+                        <i class="fas fa-user-plus"></i>
+                        Novo Usuário
+                    </button>
+                </div>
             </div>
-            <div class="stat-card">
-                <i class="fas fa-user-check"></i>
-                <h3 id="activeUsers">-</h3>
-                <p>Usuários Ativos</p>
-            </div>
-            <div class="stat-card">
-                <i class="fas fa-user-slash"></i>
-                <h3 id="bannedUsers">-</h3>
-                <p>Usuários Banidos</p>
-            </div>
-            <div class="stat-card">
-                <i class="fas fa-code-branch"></i>
-                <h3 id="currentVersion">-</h3>
-                <p>Versão Atual</p>
+
+            <!-- Users Table -->
+            <div class="table-container">
+                <table class="table" id="usersTable">
+                    <thead>
+                        <tr>
+                            <th><i class="fas fa-hashtag"></i> ID</th>
+                            <th><i class="fas fa-user"></i> Username</th>
+                            <th><i class="fas fa-key"></i> Senha</th>
+                            <th><i class="fas fa-microchip"></i> HWID</th>
+                            <th><i class="fas fa-calendar"></i> Assinatura</th>
+                            <th><i class="fas fa-info-circle"></i> Status</th>
+                            <th><i class="fas fa-tools"></i> Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Table content will be loaded here -->
+                    </tbody>
+                </table>
             </div>
         </div>
 
-        <div class="version-section">
+        <!-- Sistema Tab -->
+        <div id="sistema-tab" class="tab-content">
             <div class="management-grid">
-                <div class="version-card">
-                    <div class="version-header">
-                        <h3><i class="fas fa-cogs"></i> Controle de Versão</h3>
-                        <p>Gerencie a versão atual do cliente</p>
+                <div class="management-card">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-server"></i>
+                        </div>
+                        <div class="card-title">
+                            <h3>Informações do Sistema</h3>
+                            <p>Status e configurações do servidor</p>
+                        </div>
                     </div>
-                    <div class="version-controls">
-                        <input type="text" id="versionInput" class="version-input" placeholder="Ex: 1.0.1">
-                        <button onclick="atualizarVersao()" class="btn btn-primary">
-                            <i class="fas fa-upload"></i> Atualizar Versão
-                        </button>
+                    <div class="system-info">
+                        <div class="info-row">
+                            <span class="info-label">Status do Servidor:</span>
+                            <span class="badge badge-success">
+                                <i class="fas fa-circle"></i> Online
+                            </span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Banco de Dados:</span>
+                            <span class="badge badge-success">
+                                <i class="fas fa-database"></i> Conectado
+                            </span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Última Atualização:</span>
+                            <span id="lastUpdate">-</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Memória Usada:</span>
+                            <span id="memoryUsage">-</span>
+                        </div>
                     </div>
                 </div>
 
-                <div class="version-card">
-                    <div class="version-header">
-                        <h3><i class="fas fa-clock"></i> Adicionar Tempo Global</h3>
-                        <p>Adicione dias para todos os usuários ativos</p>
+                <div class="management-card">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <div class="card-title">
+                            <h3>Segurança</h3>
+                            <p>Configurações de segurança e proteção</p>
+                        </div>
                     </div>
-                    <div class="version-controls">
-                        <input type="number" id="daysInput" class="version-input" placeholder="Ex: 30" min="1" max="365">
-                        <button onclick="adicionarTempoGlobal()" class="btn btn-success">
-                            <i class="fas fa-plus"></i> Adicionar Dias
-                        </button>
+                    <div class="form-group">
+                        <label class="form-label">Autenticação de 2 Fatores</label>
+                        <div class="switch-container">
+                            <label class="switch">
+                                <input type="checkbox" id="2faToggle">
+                                <span class="slider"></span>
+                            </label>
+                            <span class="switch-label">Desativado</span>
+                        </div>
                     </div>
+                    <div class="form-group">
+                        <label class="form-label">Verificação de IP</label>
+                        <div class="switch-container">
+                            <label class="switch">
+                                <input type="checkbox" id="ipVerification" checked>
+                                <span class="slider"></span>
+                            </label>
+                            <span class="switch-label">Ativado</span>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary btn-block">
+                        <i class="fas fa-save"></i> Salvar Configurações
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Versao Tab -->
+        <div id="versao-tab" class="tab-content">
+            <div class="management-grid">
+                <div class="management-card">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-code-branch"></i>
+                        </div>
+                        <div class="card-title">
+                            <h3>Controle de Versão</h3>
+                            <p>Gerencie a versão atual do cliente</p>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Versão Atual</label>
+                        <div class="current-version-display">
+                            <span class="version-tag">v1.0.0</span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Nova Versão</label>
+                        <input type="text" id="versionInput" class="form-control" placeholder="Ex: 1.0.1">
+                    </div>
+                    <button onclick="atualizarVersao()" class="btn btn-primary btn-block">
+                        <i class="fas fa-upload"></i> Atualizar Versão
+                    </button>
                 </div>
 
-                <div class="version-card">
-                    <div class="version-header">
-                        <h3><i class="fas fa-user-plus"></i> Criar Novo Usuário</h3>
-                        <p>Adicione um novo usuário ao sistema</p>
+                <div class="management-card">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-history"></i>
+                        </div>
+                        <div class="card-title">
+                            <h3>Histórico de Versões</h3>
+                            <p>Últimas atualizações realizadas</p>
+                        </div>
                     </div>
-                    <div class="create-user-controls">
-                        <input type="text" id="newUsername" class="user-input" placeholder="Username">
-                        <input type="password" id="newPassword" class="user-input" placeholder="Senha">
-                        <input type="number" id="newUserDays" class="user-input" placeholder="Dias (opcional)" min="1" max="9999">
-                        <button onclick="criarNovoUsuario()" class="btn btn-info">
-                            <i class="fas fa-user-plus"></i> Criar Usuário
-                        </button>
+                    <div class="version-history">
+                        <div class="history-item">
+                            <div class="history-version">v1.0.0</div>
+                            <div class="history-date">21/09/2025</div>
+                            <div class="history-user">Admin</div>
+                        </div>
+                        <div class="history-item">
+                            <div class="history-version">v0.9.5</div>
+                            <div class="history-date">15/09/2025</div>
+                            <div class="history-user">Admin</div>
+                        </div>
+                        <div class="history-item">
+                            <div class="history-version">v0.9.0</div>
+                            <div class="history-date">01/09/2025</div>
+                            <div class="history-user">Admin</div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="search-section">
-            <input type="text" id="searchInput" class="search-input" placeholder="🔍 Pesquisar por username...">
-            <button onclick="carregarUsuarios()" class="btn btn-primary">
-                <i class="fas fa-search"></i> Pesquisar
-            </button>
+        <!-- Global Tab -->
+        <div id="global-tab" class="tab-content">
+            <div class="management-grid">
+                <div class="management-card">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="card-title">
+                            <h3>Adicionar Tempo Global</h3>
+                            <p>Adicione dias para todos os usuários ativos</p>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Número de Dias</label>
+                        <input type="number" id="daysInput" class="form-control" placeholder="Ex: 30" min="1" max="365">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Usuários Afetados</label>
+                        <div class="affected-users">
+                            <span class="badge badge-info">
+                                <i class="fas fa-users"></i> <span id="affectedCount">0</span> usuários ativos
+                            </span>
+                        </div>
+                    </div>
+                    <button onclick="adicionarTempoGlobal()" class="btn btn-success btn-block">
+                        <i class="fas fa-plus"></i> Adicionar Dias
+                    </button>
+                </div>
+
+                <div class="management-card">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-user-times"></i>
+                        </div>
+                        <div class="card-title">
+                            <h3>Limpar Usuários Expirados</h3>
+                            <p>Remova usuários com assinatura expirada</p>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Expirados há mais de (dias)</label>
+                        <input type="number" id="expiredDays" class="form-control" placeholder="Ex: 30" min="1" max="365" value="30">
+                    </div>
+                    <div class="warning-box">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <p>Esta ação é irreversível e removerá permanentemente os usuários selecionados.</p>
+                    </div>
+                    <button onclick="limparExpirados()" class="btn btn-danger btn-block">
+                        <i class="fas fa-trash"></i> Limpar Expirados
+                    </button>
+                </div>
+
+                <div class="management-card">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-sync"></i>
+                        </div>
+                        <div class="card-title">
+                            <h3>Reset Global de HWID</h3>
+                            <p>Resete o HWID de todos os usuários</p>
+                        </div>
+                    </div>
+                    <div class="info-box">
+                        <i class="fas fa-info-circle"></i>
+                        <p>Isso permitirá que todos os usuários façam login em um novo dispositivo.</p>
+                    </div>
+                    <button onclick="resetGlobalHwid()" class="btn btn-warning btn-block">
+                        <i class="fas fa-refresh"></i> Resetar Todos HWIDs
+                    </button>
+                </div>
+            </div>
         </div>
 
-        <div class="table-container">
-            <table class="table" id="usersTable">
-                <thead>
-                    <tr>
-                        <th><i class="fas fa-hashtag"></i> ID</th>
-                        <th><i class="fas fa-user"></i> Username</th>
-                        <th><i class="fas fa-lock"></i> Nova Senha</th>
-                        <th><i class="fas fa-microchip"></i> HWID</th>
-                        <th><i class="fas fa-calendar-alt"></i> Assinatura</th>
-                        <th><i class="fas fa-ban"></i> Status</th>
-                        <th><i class="fas fa-cogs"></i> Ações</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
+        <!-- Logs Tab -->
+        <div id="logs-tab" class="tab-content">
+            <div class="logs-container">
+                <div class="logs-header">
+                    <h3><i class="fas fa-history"></i> Logs do Sistema</h3>
+                    <div class="logs-actions">
+                        <button class="btn btn-sm btn-primary" onclick="refreshLogs()">
+                            <i class="fas fa-sync"></i> Atualizar
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="clearLogs()">
+                            <i class="fas fa-trash"></i> Limpar
+                        </button>
+                    </div>
+                </div>
+                <div class="logs-list" id="logsList">
+                    <div class="log-item log-success">
+                        <div class="log-icon"><i class="fas fa-check"></i></div>
+                        <div class="log-content">
+                            <div class="log-message">Usuário 'user123' criado com sucesso</div>
+                            <div class="log-time">Há 5 minutos</div>
+                        </div>
+                    </div>
+                    <div class="log-item log-warning">
+                        <div class="log-icon"><i class="fas fa-exclamation"></i></div>
+                        <div class="log-content">
+                            <div class="log-message">Tentativa de login falhada para 'admin'</div>
+                            <div class="log-time">Há 15 minutos</div>
+                        </div>
+                    </div>
+                    <div class="log-item log-info">
+                        <div class="log-icon"><i class="fas fa-info"></i></div>
+                        <div class="log-content">
+                            <div class="log-message">Versão atualizada para v1.0.0</div>
+                            <div class="log-time">Há 1 hora</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
+    <!-- Additional Styles -->
+    <style>
+        /* Additional specific styles */
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .switch-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 48px;
+            height: 24px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--border-color);
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background: var(--bg-gradient);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(24px);
+        }
+
+        .current-version-display {
+            padding: 16px;
+            background: var(--tab-inactive);
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .version-tag {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: var(--bg-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .version-history {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: var(--tab-inactive);
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        .history-version {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .history-date {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .history-user {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .affected-users {
+            padding: 12px;
+            background: var(--tab-inactive);
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .warning-box, .info-box {
+            padding: 16px;
+            background: var(--tab-inactive);
+            border-radius: 10px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .warning-box {
+            border-left: 4px solid var(--danger);
+        }
+
+        .warning-box i {
+            color: var(--danger);
+            font-size: 20px;
+        }
+
+        .info-box {
+            border-left: 4px solid var(--info);
+        }
+
+        .info-box i {
+            color: var(--info);
+            font-size: 20px;
+        }
+
+        .logs-container {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 24px;
+            border: 1px solid var(--border-color);
+        }
+
+        .logs-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .logs-header h3 {
+            color: var(--text-primary);
+            font-size: 1.2rem;
+        }
+
+        .logs-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .logs-list {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .log-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px;
+            background: var(--tab-inactive);
+            border-radius: 10px;
+            margin-bottom: 12px;
+            border-left: 4px solid;
+            transition: all 0.3s ease;
+        }
+
+        .log-item:hover {
+            transform: translateX(5px);
+        }
+
+        .log-item.log-success {
+            border-left-color: var(--success);
+        }
+
+        .log-item.log-warning {
+            border-left-color: var(--warning);
+        }
+
+        .log-item.log-info {
+            border-left-color: var(--info);
+        }
+
+        .log-item.log-error {
+            border-left-color: var(--danger);
+        }
+
+        .log-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .log-success .log-icon {
+            background: rgba(0, 214, 143, 0.1);
+            color: var(--success);
+        }
+
+        .log-warning .log-icon {
+            background: rgba(255, 170, 0, 0.1);
+            color: var(--warning);
+        }
+
+        .log-info .log-icon {
+            background: rgba(0, 180, 216, 0.1);
+            color: var(--info);
+        }
+
+        .log-error .log-icon {
+            background: rgba(255, 61, 113, 0.1);
+            color: var(--danger);
+        }
+
+        .log-content {
+            flex: 1;
+        }
+
+        .log-message {
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            margin-bottom: 4px;
+        }
+
+        .log-time {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+    </style>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="script.js"></script>
+    <script>
+        // Tab switching functionality
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remove active class from all buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+            
+            // Add active class to clicked button
+            event.target.closest('.tab-btn').classList.add('active');
+        }
+
+        // Theme toggle
+        function toggleTheme() {
+            const body = document.body;
+            const icon = document.getElementById('themeIcon');
+            
+            if (body.classList.contains('light-theme')) {
+                body.classList.remove('light-theme');
+                icon.className = 'fas fa-moon';
+                localStorage.setItem('theme', 'dark');
+            } else {
+                body.classList.add('light-theme');
+                icon.className = 'fas fa-sun';
+                localStorage.setItem('theme', 'light');
+            }
+        }
+
+        // Load theme on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'light') {
+                document.body.classList.add('light-theme');
+                document.getElementById('themeIcon').className = 'fas fa-sun';
+            }
+            
+            // Initialize counts
+            updateCounts();
+            
+            // Load initial data
+            carregarUsuarios();
+        });
+
+        function updateCounts() {
+            // These would be fetched from your API
+            document.getElementById('totalUsers').textContent = '156';
+            document.getElementById('activeUsers').textContent = '142';
+            document.getElementById('bannedUsers').textContent = '14';
+            document.getElementById('userCount').textContent = '156';
+            document.getElementById('affectedCount').textContent = '142';
+        }
+
+        // Notification function
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `
+                <div class="notification-icon">
+                    <i class="fas fa-${type === 'success' ? 'check' : 'exclamation-triangle'}"></i>
+                </div>
+                <div class="notification-content">
+                    <div class="notification-title">${type === 'success' ? 'Sucesso!' : 'Erro!'}</div>
+                    <div class="notification-message">${message}</div>
+                </div>
+            `;
+            document.body.appendChild(notification);
+            setTimeout(() => notification.classList.add('show'), 100);
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => document.body.removeChild(notification), 300);
+            }, 3000);
+        }
+
+        // Placeholder functions - replace with actual API calls
+        function carregarUsuarios() {
+            // Load users implementation
+            console.log('Loading users...');
+        }
+
+        function atualizarVersao() {
+            showNotification('Versão atualizada com sucesso!');
+        }
+
+        function adicionarTempoGlobal() {
+            showNotification('Tempo adicionado para todos os usuários ativos!');
+        }
+
+        function limparExpirados() {
+            if (confirm('Tem certeza que deseja limpar os usuários expirados?')) {
+                showNotification('Usuários expirados removidos com sucesso!');
+            }
+        }
+
+        function resetGlobalHwid() {
+            if (confirm('Tem certeza que deseja resetar todos os HWIDs?')) {
+                showNotification('Todos os HWIDs foram resetados!');
+            }
+        }
+
+        function refreshLogs() {
+            showNotification('Logs atualizados!');
+        }
+
+        function clearLogs() {
+            if (confirm('Tem certeza que deseja limpar os logs?')) {
+                showNotification('Logs limpos com sucesso!');
+            }
+        }
+
+        function logout() {
+            if (confirm('Deseja realmente sair do sistema?')) {
+                window.location.href = 'login.html';
+            }
+        }
+
+        function openCreateUserModal() {
+            // Implementation for create user modal
+            showNotification('Função de criar usuário em desenvolvimento');
+        }
+    </script>
 </body>
 </html>
