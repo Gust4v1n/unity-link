@@ -11,5 +11,8 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4"
   },
-  "keywords": []
+  "keywords": [],
+  "devDependencies": {
+    "supabase": "^2.40.7"
+  }
 }
