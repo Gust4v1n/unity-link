@@ -12,12 +12,12 @@ async function getCurrentIP() {
             'https://httpbin.org/ip',
             'https://api.my-ip.io/ip.json'
         ];
-        
+
         for (const service of ipServices) {
             try {
                 const response = await fetch(service);
                 const data = await response.json();
-                
+
                 // Diferentes APIs retornam o IP em campos diferentes
                 const ip = data.ip || data.origin || data.query;
                 if (ip) {
@@ -29,11 +29,11 @@ async function getCurrentIP() {
                 continue;
             }
         }
-        
+
         // Fallback: usar IP local para desenvolvimento
         console.warn('Não foi possível obter IP real, usando fallback');
         return '127.0.0.1';
-        
+
     } catch (error) {
         console.error('Erro ao obter IP:', error);
         return '127.0.0.1'; // Fallback para localhost
@@ -83,19 +83,19 @@ function showNotification(message, type = 'info') {
 
     const notification = document.createElement('div');
     notification.className = `notification notification-${type}`;
-    
+
     const icons = {
         success: 'fas fa-check-circle',
         error: 'fas fa-exclamation-triangle',
         warning: 'fas fa-exclamation-circle',
         info: 'fas fa-info-circle'
     };
-    
+
     notification.innerHTML = `
         <i class="${icons[type] || icons.info}"></i>
         <span>${message}</span>
     `;
-    
+
     // Adicionar estilos se não existirem
     if (!document.querySelector('#notification-styles')) {
         const style = document.createElement('style');
@@ -139,12 +139,12 @@ function showNotification(message, type = 'info') {
         `;
         document.head.appendChild(style);
     }
-    
+
     document.body.appendChild(notification);
-    
+
     // Animar entrada
     setTimeout(() => notification.classList.add('show'), 100);
-    
+
     // Remover após alguns segundos
     setTimeout(() => {
         notification.classList.remove('show');
@@ -160,15 +160,15 @@ function showNotification(message, type = 'info') {
 function toggleLoader(show = true) {
     const loader = document.querySelector('.loader');
     const submitBtn = document.querySelector('#submitBtn');
-    
+
     if (loader) {
         loader.style.display = show ? 'flex' : 'none';
     }
-    
+
     if (submitBtn) {
         submitBtn.disabled = show;
-        submitBtn.innerHTML = show ? 
-            '<i class="fas fa-spinner fa-spin"></i> Entrando...' : 
+        submitBtn.innerHTML = show ?
+            '<i class="fas fa-spinner fa-spin"></i> Entrando...' :
             '<i class="fas fa-sign-in-alt"></i> Entrar';
     }
 }
@@ -176,47 +176,47 @@ function toggleLoader(show = true) {
 // Função principal de login
 async function login(event) {
     event.preventDefault();
-    
-    const username = document.getElementById('username')?.value?.trim();
-    const password = document.getElementById('password')?.value;
-    
+
+    const username = document.getElementById('username') ? .value ? .trim();
+    const password = document.getElementById('password') ? .value;
+
     // Validações básicas
     if (!username || !password) {
         showNotification('Por favor, preencha todos os campos.', 'warning');
         return;
     }
-    
+
     if (username.length < 3) {
         showNotification('Username deve ter pelo menos 3 caracteres.', 'warning');
         return;
     }
-    
+
     if (password.length < 6) {
         showNotification('Senha deve ter pelo menos 6 caracteres.', 'warning');
         return;
     }
-    
+
     toggleLoader(true);
-    
+
     try {
         // Obter IP atual
         const currentIP = await getCurrentIP();
-        
+
         // Gerar hash da senha
         const hashedPassword = await hashSHA256(password);
-        
+
         const loginData = {
             username: username,
             hashedPassword: hashedPassword,
             currentIP: currentIP
         };
-        
+
         console.log('Tentando login com:', {
             username: loginData.username,
             ip: loginData.currentIP,
             hashedPassword: loginData.hashedPassword.substring(0, 10) + '...'
         });
-        
+
         // Fazer requisição de login
         const response = await fetch(`${API_BASE_URL}/login`, {
             method: 'POST',
@@ -226,7 +226,7 @@ async function login(event) {
             },
             body: JSON.stringify(loginData)
         });
-        
+
         let result;
         try {
             result = await response.json();
@@ -234,9 +234,9 @@ async function login(event) {
             console.error('Erro ao fazer parse da resposta:', parseError);
             throw new Error('Resposta inválida do servidor');
         }
-        
+
         console.log('Resposta do servidor:', result);
-        
+
         if (result.success) {
             // Login bem-sucedido
             const sessionData = {
@@ -246,38 +246,38 @@ async function login(event) {
                 login_time: new Date().toISOString(),
                 ip: currentIP
             };
-            
+
             // Salvar sessão
             localStorage.setItem('admin_session', JSON.stringify(sessionData));
             sessionStorage.setItem('admin_authenticated', 'true');
-            
+
             showNotification('Login realizado com sucesso! Redirecionando...', 'success');
-            
+
             // Limpar campos
             document.getElementById('username').value = '';
             document.getElementById('password').value = '';
-            
+
             // Redirecionar após pequeno delay
             setTimeout(() => {
                 window.location.href = 'index.html';
             }, 1500);
-            
+
         } else {
             // Login falhou
             const errorMessage = result.message || 'Credenciais inválidas';
             showNotification(errorMessage, 'error');
-            
+
             // Casos específicos de erro
             if (result.error_code === 'TABLE_NOT_FOUND') {
                 showNotification('Sistema não configurado. Contate o administrador.', 'error');
             }
         }
-        
+
     } catch (error) {
         console.error('Erro no login:', error);
-        
+
         let errorMessage = 'Erro de conexão. Verifique sua internet e tente novamente.';
-        
+
         if (error.name === 'TypeError' && error.message.includes('fetch')) {
             errorMessage = 'Não foi possível conectar ao servidor. Verifique sua conexão.';
         } else if (error.message.includes('JSON')) {
@@ -285,9 +285,9 @@ async function login(event) {
         } else if (error.message) {
             errorMessage = error.message;
         }
-        
+
         showNotification(errorMessage, 'error');
-        
+
     } finally {
         toggleLoader(false);
     }
@@ -297,14 +297,14 @@ async function login(event) {
 function checkIfLoggedIn() {
     const session = localStorage.getItem('admin_session');
     const authenticated = sessionStorage.getItem('admin_authenticated');
-    
+
     if (session && authenticated === 'true') {
         try {
             const sessionData = JSON.parse(session);
             const loginTime = new Date(sessionData.login_time);
             const now = new Date();
             const hoursDiff = (now - loginTime) / (1000 * 60 * 60);
-            
+
             if (hoursDiff < 24) {
                 // Sessão ainda válida, redirecionar
                 console.log('Usuário já logado, redirecionando...');
@@ -328,7 +328,7 @@ function checkIfLoggedIn() {
 function togglePassword() {
     const passwordInput = document.getElementById('password');
     const toggleIcon = document.querySelector('.toggle-password i');
-    
+
     if (passwordInput.type === 'password') {
         passwordInput.type = 'text';
         toggleIcon.classList.remove('fa-eye');
@@ -343,28 +343,28 @@ function togglePassword() {
 // Event listeners
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Página de login carregada');
-    
+
     // Verificar se já está logado
     checkIfLoggedIn();
-    
+
     // Configurar formulário de login
     const loginForm = document.getElementById('loginForm');
     if (loginForm) {
         loginForm.addEventListener('submit', login);
     }
-    
+
     // Configurar toggle de senha
     const togglePasswordBtn = document.querySelector('.toggle-password');
     if (togglePasswordBtn) {
         togglePasswordBtn.addEventListener('click', togglePassword);
     }
-    
+
     // Focus no primeiro campo
     const usernameInput = document.getElementById('username');
     if (usernameInput) {
         usernameInput.focus();
     }
-    
+
     // Enter para submeter em qualquer campo
     const inputs = document.querySelectorAll('input');
     inputs.forEach(input => {
